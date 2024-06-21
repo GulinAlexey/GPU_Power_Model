@@ -37,6 +37,7 @@ class Main:
                 if len(param) > 0:
                     print(f"{paramNamesLine[i].strip()}: {param.strip()}")
                 i = i + 1
+            plt.figure("Мощность GPU [W]")
             plt.plot(gpuPowerList)
             plt.show()
             break

@@ -13,6 +13,9 @@ class Main:
             gpu = get_phys_gpu(cuda_dev)
             print(f'{gpu.name}: core={gpu.core_temp} hotspot={gpu.hotspot_temp} vram={gpu.vram_temp}')
             print(f'{gpu.name}: fan={gpu.fan}%')
+            pinfo = api.get_power_info(gpu.handle)
+            print(f'power info: {pinfo}')
+            print(f'Voltage: {api.get_core_voltage(gpu.handle)}V')
             break
 
 main = Main()

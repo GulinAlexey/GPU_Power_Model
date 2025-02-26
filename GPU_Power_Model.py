@@ -2,6 +2,8 @@ from pynvraw import api, get_phys_gpu
 import pynvml
 import time
 from datetime import datetime
+import pymongo
+
 
 class Main:
     def __init__(self):
@@ -49,9 +51,14 @@ class Main:
         return gpu_data
 
     def mainLoop(self):
+        # Подключение к MongoDB
+        client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
+        db = client["gpu_monitoring"]  # Название базы данных
+        collection = db["gpu_data"]  # Название коллекции
         while True:
             # Получение данных
             gpu_data = self.__get_gpu_data()
+            collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
             print("=" * 50)
             print(f"Дата: {gpu_data['Date']}")

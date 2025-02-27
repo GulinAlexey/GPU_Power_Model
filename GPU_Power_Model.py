@@ -51,7 +51,25 @@ class Main:
         }
         return gpu_data
 
-    def mainLoop(self):
+    # Функция для вывода данных о GPU
+    @staticmethod
+    def print_gpu_data(gpu_data):
+        print("=" * 50)
+        print(f"Дата: {gpu_data['Date']}")
+        print(f"Частота GPU: {gpu_data['GPU Clock [MHz]']} MHz")
+        print(f"Частота памяти: {gpu_data['Memory Clock [MHz]']} MHz")
+        print(f"Температура GPU: {gpu_data['GPU Temperature [°C]']} °C")
+        print(f"Скорость вентилятора: {gpu_data['Fan Speed [%]']}%")
+        print(f"Скорость вентилятора (RPM): {gpu_data['Fan Speed [RPM]']} RPM")
+        print(f"Используемая память: {gpu_data['Memory Used [MB]']} MB")
+        print(f"Загрузка GPU: {gpu_data['GPU Load [%]']}%")
+        print(f"Загрузка контроллера памяти: {gpu_data['Memory Controller Load [%]']}%")
+        print(f"Потребление платы: {gpu_data['Board Power Draw [W]']} W")
+        print(f"Потребление энергии: {gpu_data['Power Consumption [% TDP]']}% TDP")
+        print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
+        print("=" * 50)
+
+    def main_loop(self):
         # Подключение к MongoDB
         client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         db = client["gpu_monitoring"]  # Название базы данных
@@ -73,20 +91,7 @@ class Main:
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
-            print("=" * 50)
-            print(f"Дата: {gpu_data['Date']}")
-            print(f"Частота GPU: {gpu_data['GPU Clock [MHz]']} MHz")
-            print(f"Частота памяти: {gpu_data['Memory Clock [MHz]']} MHz")
-            print(f"Температура GPU: {gpu_data['GPU Temperature [°C]']} °C")
-            print(f"Скорость вентилятора: {gpu_data['Fan Speed [%]']}%")
-            print(f"Скорость вентилятора (RPM): {gpu_data['Fan Speed [RPM]']} RPM")
-            print(f"Используемая память: {gpu_data['Memory Used [MB]']} MB")
-            print(f"Загрузка GPU: {gpu_data['GPU Load [%]']}%")
-            print(f"Загрузка контроллера памяти: {gpu_data['Memory Controller Load [%]']}%")
-            print(f"Потребление платы: {gpu_data['Board Power Draw [W]']} W")
-            print(f"Потребление энергии: {gpu_data['Power Consumption [% TDP]']}% TDP")
-            print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
-            print("=" * 50)
+            self.print_gpu_data(gpu_data)
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1
@@ -95,4 +100,4 @@ class Main:
         benchmark_process.wait()
 
 main = Main()
-main.mainLoop()
+main.main_loop()

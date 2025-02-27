@@ -3,6 +3,7 @@ import pynvml
 import time
 from datetime import datetime
 import pymongo
+import subprocess
 
 
 class Main:
@@ -54,8 +55,20 @@ class Main:
         # Подключение к MongoDB
         client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         db = client["gpu_monitoring"]  # Название базы данных
-        collection = db["gpu_data"]  # Название коллекции
-        while True:
+        collection = db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
+        # Запуск FurMark
+        # Путь к исполняемому файлу FurMark
+        furmark_path = "C:\\Program Files\\Geeks3D\\FurMark2_x64\\furmark.exe"
+        # Параметры командной строки для запуска теста
+        benchmark_options = "--demo furmark-gl --width 1920 --height 1080 --fullscreen --max-time 20" # Тест на 20 секунд
+        # Полная команда для запуска
+        command = f'"{furmark_path}" {benchmark_options}'
+        benchmark_process = None # Инициализация переменной
+        i = 0
+        while i < 35: # Цикл на 35 секунд
+            if i == 5:
+                # Запуск FurMark после 5 секунд сбора данных с сенсоров
+                benchmark_process = subprocess.Popen(command, shell=True)
             # Получение данных
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
@@ -76,7 +89,10 @@ class Main:
             print("=" * 50)
             # Пауза на 1 секунду
             time.sleep(1)
-
+            i = i + 1
+        pynvml.nvmlShutdown()
+        benchmark_process.terminate()
+        benchmark_process.wait()
 
 main = Main()
 main.mainLoop()

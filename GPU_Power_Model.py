@@ -78,7 +78,7 @@ class Main:
         # Путь к исполняемому файлу FurMark
         furmark_path = "C:\\Program Files\\Geeks3D\\FurMark2_x64\\furmark.exe"
         # Параметры командной строки для запуска теста
-        benchmark_options = "--demo furmark-gl --width 1920 --height 1080 --fullscreen --max-time 20 --log-gpu-data" # Тест на 20 секунд
+        benchmark_options = "--demo furmark-gl --width 1920 --height 1080 --fullscreen --max-time 20" # Тест на 20 секунд
         # Полная команда для запуска
         command = f'"{furmark_path}" {benchmark_options}'
         benchmark_process = None # Инициализация переменной

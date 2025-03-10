@@ -75,23 +75,29 @@ class Main:
         client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         db = client["gpu_monitoring"]  # Название базы данных
         collection = db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
-        # Запуск FurMark
-        # Путь к исполняемому файлу FurMark
-        furmark_path = "C:\\Program Files\\Geeks3D\\FurMark2_x64\\furmark.exe"
-        fraps_path = "C:\\Fraps\\fraps.exe"
+        # Запуск MSI Kombustor
+        # Путь к исполняемому файлу MSI Kombustor
+        benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
+        benchmark_name = "MSI-Kombustor-x64.exe"
         # Параметры командной строки для запуска теста
-        benchmark_options = "--demo furmark-gl --width 1920 --height 1080 --fullscreen --max-time 20" # Тест на 20 секунд
+        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder" # Стандартное время теста - 60 секунд
         # Полная команда для запуска
-        command = f'"{furmark_path}" {benchmark_options}'
+        benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
         benchmark_process = None # Инициализация переменной
+        # Параметры времени теста (в секундах)
+        time_before_start_test = 5
+        time_test_running = 25
+        time_after_finish_test = 10
+        total_time = time_before_start_test + time_test_running + time_after_finish_test
+        total_time_before_finish_test = time_before_start_test + time_test_running
+        # Цикл сбора данных с сенсоров GPU на X секунд
         i = 0
-        subprocess.Popen(fraps_path)
-        while i < 35: # Цикл на 35 секунд
-            if i == 5:
-                # Запуск FurMark после 5 секунд сбора данных с сенсоров
-                benchmark_process = subprocess.Popen(command, shell=True)
-            if i == 8 or i == 26:
-                pyautogui.press('f11')  # Имитация нажатия клавиши F11
+        while i < total_time:
+            if i == time_before_start_test:
+                # Запуск MSI Kombustor после X секунд сбора данных с сенсоров
+                benchmark_process = subprocess.Popen(benchmark_start_command, shell=True)
+            if i == total_time_before_finish_test:
+                pyautogui.press('esc') # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
             # Получение данных
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB

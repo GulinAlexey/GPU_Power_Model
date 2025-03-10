@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 import pymongo
 import subprocess
+import pyautogui
 
 
 class Main:
@@ -77,16 +78,20 @@ class Main:
         # Запуск FurMark
         # Путь к исполняемому файлу FurMark
         furmark_path = "C:\\Program Files\\Geeks3D\\FurMark2_x64\\furmark.exe"
+        fraps_path = "C:\\Fraps\\fraps.exe"
         # Параметры командной строки для запуска теста
         benchmark_options = "--demo furmark-gl --width 1920 --height 1080 --fullscreen --max-time 20" # Тест на 20 секунд
         # Полная команда для запуска
         command = f'"{furmark_path}" {benchmark_options}'
         benchmark_process = None # Инициализация переменной
         i = 0
+        subprocess.Popen(fraps_path)
         while i < 35: # Цикл на 35 секунд
             if i == 5:
                 # Запуск FurMark после 5 секунд сбора данных с сенсоров
                 benchmark_process = subprocess.Popen(command, shell=True)
+            if i == 8 or i == 26:
+                pyautogui.press('f11')  # Имитация нажатия клавиши F11
             # Получение данных
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB

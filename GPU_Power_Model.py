@@ -71,8 +71,8 @@ class Main:
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
         print("=" * 50)
 
-    # Функция для записи FPS из файла лога MSI Kombustor в соответствующие документы коллекции MongoDB
-    def __update_fps_in_collection(self, log_filepath, collection):
+    # Функция для записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
+    def __update_fps_and_efficiency_in_collection(self, log_filepath, collection):
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
@@ -90,8 +90,15 @@ class Main:
                     # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
                     document = collection.find_one({"Date": log_datetime})
                     if document:
-                        # Обновить поле "FPS" в найденном документе
-                        collection.update_one({"_id": document["_id"]}, {"$set": {"FPS": int(fps)}})
+                        # Извлечь "Board Power Draw [W]" из документа
+                        board_power_draw = document.get("Board Power Draw [W]", None)
+                        if board_power_draw:
+                            # Рассчитать "Efficiency [FPS/W]"
+                            efficiency = fps / board_power_draw
+                            # Обновить (записать) поля "FPS" и "Efficiency [FPS/W]" в найденном документе
+                            collection.update_one({"_id": document["_id"]}, {"$set": {"FPS": fps, "Efficiency [FPS/W]": efficiency}})
+                        else:
+                            print(f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime}в коллекции MongoDB")
                     else:
                         print(f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
 
@@ -112,7 +119,7 @@ class Main:
         benchmark_process = None  # Инициализация переменной
         # Параметры времени теста (в секундах)
         time_before_start_test = 5
-        time_test_running = 25
+        time_test_running = 30
         time_after_finish_test = 10
         total_time = time_before_start_test + time_test_running + time_after_finish_test
         total_time_before_finish_test = time_before_start_test + time_test_running
@@ -134,8 +141,8 @@ class Main:
             i = i + 1
         benchmark_process.terminate()
         benchmark_process.wait()
-        # Запись FPS из файла лога MSI Kombustor в соответствующие документы коллекции MongoDB
-        self.__update_fps_in_collection(benchmark_folder + log_filename, collection)
+        # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+        self.__update_fps_and_efficiency_in_collection(benchmark_folder + log_filename, collection)
         pynvml.nvmlShutdown()
 
 main = Main()

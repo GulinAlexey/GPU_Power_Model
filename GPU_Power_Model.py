@@ -5,6 +5,7 @@ from datetime import datetime
 import pymongo
 import subprocess
 import pyautogui
+import re
 
 
 class Main:
@@ -70,20 +71,45 @@ class Main:
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
         print("=" * 50)
 
+    # Функция для записи FPS из файла лога MSI Kombustor в соответствующие документы коллекции MongoDB
+    def __update_fps_in_collection(self, log_filepath, collection):
+        # Регулярное выражение для строки с FPS в логе
+        log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
+        # Текущая дата без времени
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        # Открыть файл лога
+        with open(log_filepath, "r") as file:
+            for line in file:
+                match = re.search(log_pattern, line)
+                if match:
+                    # Извлечь время и FPS из найденной строки
+                    log_time = match.group(1)
+                    fps = int(match.group(2))
+                    # Преобразовать время из строки
+                    log_datetime = f"{current_date} {log_time}"
+                    # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
+                    document = collection.find_one({"Date": log_datetime})
+                    if document:
+                        # Обновить поле "FPS" в найденном документе
+                        collection.update_one({"_id": document["_id"]}, {"$set": {"FPS": int(fps)}})
+                    else:
+                        print(f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
+
+
     def main_loop(self):
         # Подключение к MongoDB
         client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         db = client["gpu_monitoring"]  # Название базы данных
         collection = db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
-        # Запуск MSI Kombustor
         # Путь к исполняемому файлу MSI Kombustor
         benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
         benchmark_name = "MSI-Kombustor-x64.exe"
+        log_filename = "_kombustor_log.txt"
         # Параметры командной строки для запуска теста
-        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder" # Стандартное время теста - 60 секунд
+        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
         # Полная команда для запуска
         benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
-        benchmark_process = None # Инициализация переменной
+        benchmark_process = None  # Инициализация переменной
         # Параметры времени теста (в секундах)
         time_before_start_test = 5
         time_test_running = 25
@@ -97,7 +123,7 @@ class Main:
                 # Запуск MSI Kombustor после X секунд сбора данных с сенсоров
                 benchmark_process = subprocess.Popen(benchmark_start_command, shell=True)
             if i == total_time_before_finish_test:
-                pyautogui.press('esc') # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
+                pyautogui.press('esc')  # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
             # Получение данных
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
@@ -106,9 +132,11 @@ class Main:
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1
-        pynvml.nvmlShutdown()
         benchmark_process.terminate()
         benchmark_process.wait()
+        # Запись FPS из файла лога MSI Kombustor в соответствующие документы коллекции MongoDB
+        self.__update_fps_in_collection(benchmark_folder + log_filename, collection)
+        pynvml.nvmlShutdown()
 
 main = Main()
 main.main_loop()

@@ -79,9 +79,11 @@ class Main:
         current_date = datetime.now().strftime("%Y-%m-%d")
         # Открыть файл лога
         with open(log_filepath, "r") as file:
+            any_match_found = False
             for line in file:
                 match = re.search(log_pattern, line)
                 if match:
+                    any_match_found = True
                     # Извлечь время и FPS из найденной строки
                     log_time = match.group(1)
                     fps = int(match.group(2))
@@ -101,6 +103,8 @@ class Main:
                             print(f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime}в коллекции MongoDB")
                     else:
                         print(f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
+            if not any_match_found:
+                print("В файле лога не было найдено значений FPS")
 
 
     def main_loop(self):

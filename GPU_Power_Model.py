@@ -55,7 +55,7 @@ class Main:
 
     # Функция для вывода данных о GPU
     @staticmethod
-    def print_gpu_data(gpu_data):
+    def __print_gpu_data(gpu_data):
         print("=" * 50)
         print(f"Дата: {gpu_data['Date']}")
         print(f"Частота GPU: {gpu_data['GPU Clock [MHz]']} MHz")
@@ -72,7 +72,8 @@ class Main:
         print("=" * 50)
 
     # Функция для записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
-    def __update_fps_and_efficiency_in_collection(self, log_filepath, collection):
+    @staticmethod
+    def __update_fps_and_efficiency_in_collection(log_filepath, collection):
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
@@ -106,7 +107,6 @@ class Main:
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
 
-
     def main_loop(self):
         # Подключение к MongoDB
         client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
@@ -139,7 +139,7 @@ class Main:
             gpu_data = self.__get_gpu_data()
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
-            self.print_gpu_data(gpu_data)
+            self.__print_gpu_data(gpu_data)
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1
@@ -148,6 +148,7 @@ class Main:
         # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
         self.__update_fps_and_efficiency_in_collection(benchmark_folder + log_filename, collection)
         pynvml.nvmlShutdown()
+
 
 main = Main()
 main.main_loop()

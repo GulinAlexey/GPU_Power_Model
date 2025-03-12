@@ -100,8 +100,10 @@ class Main:
                             efficiency = fps / board_power_draw
                             # Обновить (записать) поля "FPS" и "Efficiency [FPS/W]" в найденном документе
                             collection.update_one({"_id": document["_id"]}, {"$set": {"FPS": fps, "Efficiency [FPS/W]": efficiency}})
+                            # Вывести инфо о записанных значениях
+                            print(f"{log_datetime} FPS: {fps}, Эффективность [FPS/W]: {efficiency}")
                         else:
-                            print(f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime}в коллекции MongoDB")
+                            print(f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime} в коллекции MongoDB")
                     else:
                         print(f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
             if not any_match_found:

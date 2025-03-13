@@ -6,10 +6,14 @@ import pymongo
 import subprocess
 import pyautogui
 import re
+import atexit
+import contextlib
 
 
 class Main:
     def __init__(self):
+        # Регистрация метода cleanup для выполнения при завершении программы
+        atexit.register(self.__cleanup)
         # Инициализация pynvml
         pynvml.nvmlInit()
         # Получение количества GPU
@@ -17,34 +21,53 @@ class Main:
         if device_count == 0:
             print("Не найдено GPU NVIDIA")
             exit()
-        # Получение первого GPU
+        # Получение первого GPU для pynvml
         self.__handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        # Получение первого GPU для pynvraw
+        cuda_dev = 0
+        gpu = get_phys_gpu(cuda_dev)
+        self.__pynvraw_handle = gpu.handle
         # Подключение к MongoDB
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_monitoring"]  # Название базы данных
         # Путь к исполняемому файлу MSI Kombustor
-        self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
-        self.__benchmark_name = "MSI-Kombustor-x64.exe"
-        self.__log_filename = "_kombustor_log.txt"
+        benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
+        benchmark_name = "MSI-Kombustor-x64.exe"
+        log_filename = "_kombustor_log.txt"
         # Параметры командной строки для запуска теста
-        self.__benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
         # Полная команда для запуска
-        self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {self.__benchmark_options}'
+        self.__benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
+        self.__benchmark_log_path = benchmark_folder + log_filename
+
+    # Конец работы программы
+    @staticmethod
+    def __cleanup():
+        pynvml.nvmlShutdown()
+        print("Работа программы завершена")
 
     # Метод получения данных GPU
     def __get_gpu_data(self):
         # Получение информации о GPU
-        util = pynvml.nvmlDeviceGetUtilizationRates(self.__handle)
-        memory_info = pynvml.nvmlDeviceGetMemoryInfo(self.__handle)
-        temperature = pynvml.nvmlDeviceGetTemperature(self.__handle, pynvml.NVML_TEMPERATURE_GPU)
-        fan_speed = pynvml.nvmlDeviceGetFanSpeed(self.__handle)
-        clock_info = pynvml.nvmlDeviceGetClockInfo(self.__handle, pynvml.NVML_CLOCK_GRAPHICS)
-        memory_clock = pynvml.nvmlDeviceGetClockInfo(self.__handle, pynvml.NVML_CLOCK_MEM) / 2
-        power_usage = pynvml.nvmlDeviceGetPowerUsage(self.__handle) / 1000.0  # В ваттах
-        power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle) / 1000.0  # В ваттах
-        cuda_dev = 0
-        gpu = get_phys_gpu(cuda_dev)
-        voltage = api.get_core_voltage(gpu.handle)  # В вольтах
+        try:
+            util = pynvml.nvmlDeviceGetUtilizationRates(self.__handle)
+            memory_info = pynvml.nvmlDeviceGetMemoryInfo(self.__handle)
+            temperature = pynvml.nvmlDeviceGetTemperature(self.__handle, pynvml.NVML_TEMPERATURE_GPU)
+            fan_speed = pynvml.nvmlDeviceGetFanSpeed(self.__handle)
+            clock_info = pynvml.nvmlDeviceGetClockInfo(self.__handle, pynvml.NVML_CLOCK_GRAPHICS)
+            memory_clock = pynvml.nvmlDeviceGetClockInfo(self.__handle, pynvml.NVML_CLOCK_MEM) / 2
+            power_usage = pynvml.nvmlDeviceGetPowerUsage(self.__handle) / 1000.0  # В ваттах
+            power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle) / 1000.0  # В ваттах
+        except Exception as e:
+            # Обработка любых ошибок
+            print(f"Произошло исключение {type(e).__name__}: {e}")  # Вывести название ошибки и сообщение
+            return
+        try:
+            voltage = api.get_core_voltage(self.__pynvraw_handle)  # В вольтах
+        except Exception as e:
+            # Обработка любых ошибок
+            print(f"Произошло исключение: {type(e).__name__}: {e}")  # Вывести название ошибки и сообщение
+            return
         # Получение текущей даты и времени
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Формирование данных
@@ -120,6 +143,19 @@ class Main:
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
 
+    # Метод - проверка, что работа бенчмарка была завершена корректно
+    def __check_benchmark_log_for_normal_shutdown(self):
+        try:
+            with open(self.__benchmark_log_path, 'r') as log_file:
+                for line in log_file:
+                    if "Kombustor shutdown ok." in line:
+                        return True
+            print("Работа бенчмарка была неожиданно остановлена, запись лога прервалась")
+            return False
+        except Exception as e:
+            print(f"Произошла ошибка: {e}")
+            return False
+
     # Метод - запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
     def __run_benchmark(self, collection, benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test):
         benchmark_process = None  # Инициализация переменной
@@ -136,6 +172,12 @@ class Main:
                 pyautogui.press('esc')  # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
             # Получение данных
             gpu_data = self.__get_gpu_data()
+            if gpu_data is None:
+                print("Не удалось получить данные с сенсоров GPU. Тест бенчмарка остановлен")
+                with contextlib.suppress(Exception):
+                    benchmark_process.terminate()
+                    benchmark_process.wait()
+                return False
             collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
             self.__print_gpu_data(gpu_data)
@@ -144,6 +186,8 @@ class Main:
             i = i + 1
         benchmark_process.terminate()
         benchmark_process.wait()
+        if not self.__check_benchmark_log_for_normal_shutdown(): # Проверка, что работа бенчмарка была завершена корректно
+            return False
 
     def main_loop(self):
         collection = self.__db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
@@ -154,11 +198,12 @@ class Main:
         time_after_finish_test = 10
 
         # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
-        self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
+        res = self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
+        if res is False:
+            print("Работа теста бенчмарка остановлена. Данные параметры работы GPU являются нестабильными")
+            return
         # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
-        self.__update_fps_and_efficiency_in_collection(self.__benchmark_folder + self.__log_filename, collection)
-        # Конец работы программы
-        pynvml.nvmlShutdown()
+        self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
 
 
 main = Main()

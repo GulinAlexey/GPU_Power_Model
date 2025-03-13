@@ -218,7 +218,7 @@ class Main:
 
         power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.__handle)
         print(f"Новый Power Limit: {power_limit / 1000} W")
-        print(f"Новое ограничение TDP: {power_limit / power_limit_constraints[1]} %")
+        print(f"Новое ограничение TDP: {(power_limit / power_limit_constraints[1]) * 100} %")
         return power_limit
 
     # Вернуть значение Power Limit GPU по умолчанию

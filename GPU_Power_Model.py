@@ -9,6 +9,8 @@ import re
 import atexit
 import contextlib
 
+pyautogui.FAILSAFE = False # Убрать исключение при эмуляции клавиши "Esc" (для выхода из бенчмарка), когда курсор - в углу экрана
+
 
 class Main:
     def __init__(self):
@@ -228,7 +230,7 @@ class Main:
         return default_power_limit
 
     def main_loop(self):
-        collection = self.__db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
+        collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
 
         # Параметры времени теста (в секундах)
         time_before_start_test = 5

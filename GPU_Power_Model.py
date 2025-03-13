@@ -19,8 +19,19 @@ class Main:
             exit()
         # Получение первого GPU
         self.__handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        # Подключение к MongoDB
+        self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
+        self.__db = self.__client["gpu_monitoring"]  # Название базы данных
+        # Путь к исполняемому файлу MSI Kombustor
+        self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
+        self.__benchmark_name = "MSI-Kombustor-x64.exe"
+        self.__log_filename = "_kombustor_log.txt"
+        # Параметры командной строки для запуска теста
+        self.__benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        # Полная команда для запуска
+        self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {self.__benchmark_options}'
 
-    # Функция для получения данных GPU
+    # Метод получения данных GPU
     def __get_gpu_data(self):
         # Получение информации о GPU
         util = pynvml.nvmlDeviceGetUtilizationRates(self.__handle)
@@ -53,7 +64,7 @@ class Main:
         }
         return gpu_data
 
-    # Функция для вывода данных о GPU
+    # Метод вывода данных о GPU
     @staticmethod
     def __print_gpu_data(gpu_data):
         print("=" * 50)
@@ -71,7 +82,7 @@ class Main:
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
         print("=" * 50)
 
-    # Функция для записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
+    # Метод записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
     @staticmethod
     def __update_fps_and_efficiency_in_collection(log_filepath, collection):
         # Регулярное выражение для строки с FPS в логе
@@ -109,26 +120,12 @@ class Main:
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
 
-    def main_loop(self):
-        # Подключение к MongoDB
-        client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
-        db = client["gpu_monitoring"]  # Название базы данных
-        collection = db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
-        # Путь к исполняемому файлу MSI Kombustor
-        benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
-        benchmark_name = "MSI-Kombustor-x64.exe"
-        log_filename = "_kombustor_log.txt"
-        # Параметры командной строки для запуска теста
-        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
-        # Полная команда для запуска
-        benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
+    # Метод - запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
+    def __run_benchmark(self, collection, benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test):
         benchmark_process = None  # Инициализация переменной
-        # Параметры времени теста (в секундах)
-        time_before_start_test = 5
-        time_test_running = 30
-        time_after_finish_test = 10
         total_time = time_before_start_test + time_test_running + time_after_finish_test
         total_time_before_finish_test = time_before_start_test + time_test_running
+
         # Цикл сбора данных с сенсоров GPU на X секунд
         i = 0
         while i < total_time:
@@ -147,8 +144,20 @@ class Main:
             i = i + 1
         benchmark_process.terminate()
         benchmark_process.wait()
+
+    def main_loop(self):
+        collection = self.__db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
+
+        # Параметры времени теста (в секундах)
+        time_before_start_test = 5
+        time_test_running = 30
+        time_after_finish_test = 10
+
+        # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
+        self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
         # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
-        self.__update_fps_and_efficiency_in_collection(benchmark_folder + log_filename, collection)
+        self.__update_fps_and_efficiency_in_collection(self.__benchmark_folder + self.__log_filename, collection)
+        # Конец работы программы
         pynvml.nvmlShutdown()
 
 

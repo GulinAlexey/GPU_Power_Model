@@ -244,11 +244,13 @@ class Main:
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, default_power_limit)
         return default_power_limit
 
-    # Метод вывода данных о min, max частотах GPU
+    # Метод вывода данных о min, max частотах GPU и смещении
     def __print_gpu_clock_info(self):
         # Получение частот
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
-        print(f"Мин. частота GPU: {min_gpu_clock} MHz, Макс. частота GPU: {max_gpu_clock} MHz")
+        print(f"Мин. частота GPU: {min_gpu_clock} MHz")
+        print(f"Макс. частота GPU: {max_gpu_clock} MHz")
+        print(f"Смещение частоты GPU: {self.__current_clock_offset} MHz")
 
     # Метод увеличения смещения частоты GPU для прохождения следующего теста бенчмарка
     def __increase_gpu_clock_offset(self, megahertz_reducing_value):
@@ -275,6 +277,8 @@ class Main:
         current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
         previous_power_limit = None
         self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
+        self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения GPU по умолчанию
+        self.__print_gpu_clock_info
         # Цикл андервольтинга и тестирования
         while True:
             # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)

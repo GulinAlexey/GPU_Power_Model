@@ -8,6 +8,7 @@ import pyautogui
 import re
 import atexit
 import contextlib
+import os
 
 pyautogui.FAILSAFE = False # Убрать исключение при эмуляции клавиши "Esc" (для выхода из бенчмарка), когда курсор - в углу экрана
 
@@ -228,6 +229,22 @@ class Main:
         default_power_limit = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.__handle)
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, default_power_limit)
         return default_power_limit
+
+    # TODO
+    def __print_gpu_clock_info(self):
+        # Получение частот
+        clock_gpu_min, clock_gpu_max = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
+                                                                               pynvml.NVML_CLOCK_GRAPHICS)
+        print(f"Мин. частота GPU: {clock_gpu_min} MHz, Макс. частота GPU: {clock_gpu_max} MHz")
+
+    # TODO
+    def __set_new_gpu_clock_offset(self, new_clock_offset):
+        os.system(r'C:\NVIDIA_Inspector_1.9.8.7_Beta\nvidiaInspector.exe -setBaseClockOffset:0,0,' + str(new_clock_offset))
+
+    # TODO
+    def __set_gpu_clock_offset_to_default(self):
+        default_clock_offset = 0
+        os.system(r'C:\NVIDIA_Inspector_1.9.8.7_Beta\nvidiaInspector.exe -setBaseClockOffset:0,0,' + str(default_clock_offset))
 
     def main_loop(self):
         collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции

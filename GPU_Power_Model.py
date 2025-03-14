@@ -253,8 +253,8 @@ class Main:
         print(f"Смещение частоты GPU: {self.__current_clock_offset} MHz")
 
     # Метод увеличения смещения частоты GPU для прохождения следующего теста бенчмарка
-    def __increase_gpu_clock_offset(self, megahertz_reducing_value):
-        new_clock_offset = self.__current_clock_offset + megahertz_reducing_value
+    def __increase_gpu_clock_offset(self, megahertz_increasing_value):
+        new_clock_offset = self.__current_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
         self.__current_clock_offset = new_clock_offset
 
@@ -273,6 +273,8 @@ class Main:
 
         watt_reducing_value = 5 # Величина уменьшения Power Limit за один тест (в W)
         milliwatt_reducing_value = watt_reducing_value * 1000
+
+        megahertz_increasing_value = 50 # Величина увеличения смещения частоты GPU за один тест (в MHz)
 
         current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
         previous_power_limit = None

@@ -42,6 +42,13 @@ class Main:
         # Полная команда для запуска
         self.__benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
         self.__benchmark_log_path = benchmark_folder + log_filename
+        # Путь и параметры для NVIDIA Inspector
+        nvidia_inspector_folder = "C:\\NVIDIA_Inspector_1.9.8.7_Beta\\"
+        nvidia_inspector_name = "nvidiaInspector.exe"
+        nvidia_inspector_gpu_clock_offset_options = "-setBaseClockOffset:0,0," # Справа этой строки добавлять само значение
+        self.__nvidia_inspector_gpu_clock_offset_command = f'"{nvidia_inspector_folder + nvidia_inspector_name}" {nvidia_inspector_gpu_clock_offset_options}'
+        self.__default_clock_offset = 0
+        self.__current_clock_offset = self.__default_clock_offset
 
     # Конец работы программы
     @staticmethod
@@ -230,21 +237,20 @@ class Main:
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, default_power_limit)
         return default_power_limit
 
-    # TODO
+    # Метод вывода данных о min, max частотах GPU
     def __print_gpu_clock_info(self):
         # Получение частот
         clock_gpu_min, clock_gpu_max = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
         print(f"Мин. частота GPU: {clock_gpu_min} MHz, Макс. частота GPU: {clock_gpu_max} MHz")
 
-    # TODO
+    # Метод изменения смещения частоты GPU для прохождения следующего теста бенчмарка
     def __set_new_gpu_clock_offset(self, new_clock_offset):
-        os.system(r'C:\NVIDIA_Inspector_1.9.8.7_Beta\nvidiaInspector.exe -setBaseClockOffset:0,0,' + str(new_clock_offset))
+        os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
 
-    # TODO
+    # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
-        default_clock_offset = 0
-        os.system(r'C:\NVIDIA_Inspector_1.9.8.7_Beta\nvidiaInspector.exe -setBaseClockOffset:0,0,' + str(default_clock_offset))
+        os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_clock_offset))
 
     def main_loop(self):
         collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции

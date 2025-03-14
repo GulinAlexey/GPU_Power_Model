@@ -69,6 +69,7 @@ class Main:
             power_usage = pynvml.nvmlDeviceGetPowerUsage(self.__handle)
             power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
             power_limit_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.__handle)
+            min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
         except Exception as e:
             # Обработка любых ошибок
             print(f"Произошло исключение {type(e).__name__}: {e}")  # Вывести название ошибки и сообщение
@@ -96,6 +97,9 @@ class Main:
             "Power Consumption [% TDP]": (power_usage / power_limit_constraints[1]) * 100,
             "Power Limit [W]": power_limit / 1000.0,  # В ваттах
             "TDP Limit [%]": (power_limit / power_limit_constraints[1]) * 100,
+            "Min GPU Clock Frequency [MHz]": min_gpu_clock,
+            "Max GPU Clock Frequency [MHz]": max_gpu_clock,
+            "GPU Clock Frequency Offset [MHz]": self.__current_clock_offset,
             "GPU Voltage [V]": voltage
         }
         return gpu_data
@@ -116,7 +120,10 @@ class Main:
         print(f"Потребление платы: {gpu_data['Board Power Draw [W]']} W")
         print(f"Потребление энергии: {gpu_data['Power Consumption [% TDP]']}% TDP")
         print(f"Ограничение мощности: {gpu_data['Power Limit [W]']} W")
-        print(f"Ограничение TDP: {gpu_data['TDP Limit [%]']} %")
+        print(f"Ограничение TDP: {gpu_data['TDP Limit [%]']}%")
+        print(f"Мин. частота GPU: {gpu_data["Min GPU Clock Frequency [MHz]"]} MHz")
+        print(f"Макс. частота GPU: {gpu_data["Max GPU Clock Frequency [MHz]"]} MHz")
+        print(f"Смещение частоты GPU: {gpu_data["GPU Clock Frequency Offset [MHz]"]} MHz")
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
         print("=" * 50)
 
@@ -240,17 +247,19 @@ class Main:
     # Метод вывода данных о min, max частотах GPU
     def __print_gpu_clock_info(self):
         # Получение частот
-        clock_gpu_min, clock_gpu_max = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
-                                                                               pynvml.NVML_CLOCK_GRAPHICS)
-        print(f"Мин. частота GPU: {clock_gpu_min} MHz, Макс. частота GPU: {clock_gpu_max} MHz")
+        min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
+        print(f"Мин. частота GPU: {min_gpu_clock} MHz, Макс. частота GPU: {max_gpu_clock} MHz")
 
-    # Метод изменения смещения частоты GPU для прохождения следующего теста бенчмарка
-    def __set_new_gpu_clock_offset(self, new_clock_offset):
+    # Метод увеличения смещения частоты GPU для прохождения следующего теста бенчмарка
+    def __increase_gpu_clock_offset(self, megahertz_reducing_value):
+        new_clock_offset = self.__current_clock_offset + megahertz_reducing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
+        self.__current_clock_offset = new_clock_offset
 
     # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_clock_offset))
+        self.__current_clock_offset = self.__default_clock_offset
 
     def main_loop(self):
         collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции

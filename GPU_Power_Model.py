@@ -217,10 +217,10 @@ class Main:
         power_limit_default = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.__handle)
         power_limit_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.__handle)
 
-        print(f"Текущий Power Limit: {power_limit / 1000} [W]")
+        print(f"Текущий Power Limit: {power_limit / 1000} W")
         print(f"Текущий TDP Limit: {(power_limit / power_limit_constraints[1]) * 100} %")
-        print(f"Power Limit по умолчанию: {power_limit_default / 1000} [W]")
-        print(f"Ограничения Power Limit: {power_limit_constraints[0] / 1000} W - {power_limit_constraints[1] / 1000} [W]")  # max Power Limit = 100% TDP
+        print(f"Power Limit по умолчанию: {power_limit_default / 1000} W")
+        print(f"Ограничения Power Limit: {power_limit_constraints[0] / 1000} W - {power_limit_constraints[1] / 1000} W")  # max Power Limit = 100% TDP
         print(f"Ограничения TDP: {(power_limit_constraints[0] / power_limit_constraints[1]) * 100} % - 100 %")
 
     # Метод уменьшения Power Limit GPU для прохождения следующего теста бенчмарка
@@ -285,7 +285,7 @@ class Main:
         # Изменить частоту смещения GPU (TODO должно быть внутри цикла тестов)
         # self.__increase_gpu_clock_offset(megahertz_increasing_value)
         # self.__print_gpu_clock_info()
-        
+
         # Цикл андервольтинга и тестирования
         while True:
             # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)

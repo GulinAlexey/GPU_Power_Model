@@ -281,6 +281,11 @@ class Main:
         self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
         self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения GPU по умолчанию
         self.__print_gpu_clock_info()
+
+        # Изменить частоту смещения GPU (TODO должно быть внутри цикла тестов)
+        # self.__increase_gpu_clock_offset(megahertz_increasing_value)
+        # self.__print_gpu_clock_info()
+        
         # Цикл андервольтинга и тестирования
         while True:
             # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)

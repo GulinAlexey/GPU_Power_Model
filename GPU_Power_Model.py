@@ -45,10 +45,17 @@ class Main:
         # Путь и параметры для NVIDIA Inspector
         nvidia_inspector_folder = "C:\\NVIDIA_Inspector_1.9.8.7_Beta\\"
         nvidia_inspector_name = "nvidiaInspector.exe"
+        # Частота GPU
         nvidia_inspector_gpu_clock_offset_options = "-setBaseClockOffset:0,0," # Справа этой строки добавлять само значение
         self.__nvidia_inspector_gpu_clock_offset_command = f'"{nvidia_inspector_folder + nvidia_inspector_name}" {nvidia_inspector_gpu_clock_offset_options}'
-        self.__default_clock_offset = 0
-        self.__current_clock_offset = self.__default_clock_offset
+        self.__default_gpu_clock_offset = 0
+        self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
+        # Частота памяти
+        nvidia_inspector_mem_clock_offset_options = "-setMemoryClockOffset:0,0,"  # Справа этой строки добавлять само значение
+        self.__nvidia_inspector_mem_clock_offset_command = f'"{nvidia_inspector_folder + nvidia_inspector_name}" {nvidia_inspector_mem_clock_offset_options}'
+        self.__default_mem_clock_offset = 0
+        self.__current_mem_clock_offset = self.__default_mem_clock_offset
+
 
     # Конец работы программы
     @staticmethod
@@ -99,7 +106,7 @@ class Main:
             "TDP Limit [%]": (power_limit / power_limit_constraints[1]) * 100,
             "Min GPU Clock Frequency [MHz]": min_gpu_clock,
             "Max GPU Clock Frequency [MHz]": max_gpu_clock,
-            "GPU Clock Frequency Offset [MHz]": self.__current_clock_offset,
+            "GPU Clock Frequency Offset [MHz]": self.__current_gpu_clock_offset,
             "GPU Voltage [V]": voltage
         }
         return gpu_data
@@ -250,18 +257,29 @@ class Main:
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
         print(f"Мин. частота GPU: {min_gpu_clock} MHz")
         print(f"Макс. частота GPU: {max_gpu_clock} MHz")
-        print(f"Смещение частоты GPU: {self.__current_clock_offset} MHz")
+        print(f"Смещение частоты GPU: {self.__current_gpu_clock_offset} MHz")
 
     # Метод увеличения смещения частоты GPU для прохождения следующего теста бенчмарка
     def __increase_gpu_clock_offset(self, megahertz_increasing_value):
-        new_clock_offset = self.__current_clock_offset + megahertz_increasing_value
+        new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
-        self.__current_clock_offset = new_clock_offset
+        self.__current_gpu_clock_offset = new_clock_offset
 
     # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
-        os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_clock_offset))
-        self.__current_clock_offset = self.__default_clock_offset
+        os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_gpu_clock_offset))
+        self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
+
+    # Метод увеличения смещения частоты памяти для прохождения следующего теста бенчмарка
+    def __increase_mem_clock_offset(self, megahertz_increasing_value):
+        new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
+        os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
+        self.__current_mem_clock_offset = new_clock_offset
+
+    # Вернуть значение смещения частоты памяти по умолчанию
+    def __set_mem_clock_offset_to_default(self):
+        os.system(self.__nvidia_inspector_mem_clock_offset_command + str(self.__default_mem_clock_offset))
+        self.__current_mem_clock_offset = self.__default_mem_clock_offset
 
     def main_loop(self):
         collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
@@ -274,15 +292,15 @@ class Main:
         watt_reducing_value = 5 # Величина уменьшения Power Limit за один тест (в W)
         milliwatt_reducing_value = watt_reducing_value * 1000
 
-        megahertz_increasing_value = 50 # Величина увеличения смещения частоты GPU за один тест (в MHz)
+        megahertz_increasing_value = 100 # Величина увеличения смещения частоты GPU за один тест (в MHz)
 
         current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
         previous_power_limit = None
         self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
-        self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения GPU по умолчанию
+        self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения частоты GPU по умолчанию
         self.__print_gpu_clock_info()
 
-        # Изменить частоту смещения GPU (TODO должно быть внутри цикла тестов)
+        # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
         # self.__increase_gpu_clock_offset(megahertz_increasing_value)
         # self.__print_gpu_clock_info()
 

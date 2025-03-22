@@ -292,16 +292,18 @@ class Main:
         watt_reducing_value = 5 # Величина уменьшения Power Limit за один тест (в W)
         milliwatt_reducing_value = watt_reducing_value * 1000
 
-        megahertz_increasing_value = 100 # Величина увеличения смещения частоты GPU за один тест (в MHz)
+        gpu_megahertz_increasing_value = 100 # Величина увеличения смещения частоты GPU за один тест (в MHz)
+        mem_megahertz_increasing_value = 100 # Величина увеличения смещения частоты памяти за один тест (в MHz)
 
         current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
         previous_power_limit = None
         self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
         self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения частоты GPU по умолчанию
         self.__print_gpu_clock_info()
+        self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
 
         # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
-        # self.__increase_gpu_clock_offset(megahertz_increasing_value)
+        # self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
         # self.__print_gpu_clock_info()
 
         # Цикл андервольтинга и тестирования

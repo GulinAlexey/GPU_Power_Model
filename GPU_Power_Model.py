@@ -107,6 +107,7 @@ class Main:
             "Min GPU Clock Frequency [MHz]": min_gpu_clock,
             "Max GPU Clock Frequency [MHz]": max_gpu_clock,
             "GPU Clock Frequency Offset [MHz]": self.__current_gpu_clock_offset,
+            "Memory Clock Offset [MHz]": self.__current_mem_clock_offset,
             "GPU Voltage [V]": voltage
         }
         return gpu_data
@@ -131,6 +132,7 @@ class Main:
         print(f"Мин. частота GPU: {gpu_data["Min GPU Clock Frequency [MHz]"]} MHz")
         print(f"Макс. частота GPU: {gpu_data["Max GPU Clock Frequency [MHz]"]} MHz")
         print(f"Смещение частоты GPU: {gpu_data["GPU Clock Frequency Offset [MHz]"]} MHz")
+        print(f"Смещение частоты памяти: {gpu_data["Memory Clock Offset [MHz]"]} MHz")
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
         print("=" * 50)
 
@@ -305,6 +307,9 @@ class Main:
         # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
         # self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
         # self.__print_gpu_clock_info()
+
+        # Изменить смещение частоты памяти (TODO должно быть внутри цикла тестов)
+        # self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
 
         # Цикл андервольтинга и тестирования
         while True:

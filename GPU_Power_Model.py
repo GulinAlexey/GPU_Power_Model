@@ -278,11 +278,17 @@ class Main:
         new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
         self.__current_gpu_clock_offset = new_clock_offset
+        # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
+        min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
+        return max_gpu_clock
 
     # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_gpu_clock_offset))
         self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
+        # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
+        min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
+        return max_gpu_clock
 
     # Увеличение смещения частоты памяти для прохождения следующего теста бенчмарка
     def __increase_mem_clock_offset(self, megahertz_increasing_value):
@@ -319,30 +325,38 @@ class Main:
             current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
             previous_power_limit = None
             self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
-            self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения частоты GPU по умолчанию
-            self.__print_gpu_clock_info()
             self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
-
-            # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
-            # self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
-            # self.__print_gpu_clock_info()
 
             # Изменить смещение частоты памяти (TODO должно быть внутри цикла тестов)
             # self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
 
             # Цикл андервольтинга и тестирования
+            # Цикл снижения Power Limit
             while True:
-                # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
-                res = self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
-                if res is False:
-                    print("Работа теста бенчмарка была остановлена. Данные параметры работы GPU являются нестабильными")
-                    print(f"Нестабильное значение Power Limit: {current_power_limit / 1000} W")
-                    print(f"Стабильное значение Power Limit: {previous_power_limit / 1000} W")
-                    print(f"Значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
-                    print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
-                    break
-                # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
-                self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
+                current_max_gpu_clock = self.__set_gpu_clock_offset_to_default()  # Вернуть значение смещения частоты GPU по умолчанию
+                self.__print_gpu_clock_info()
+                previous_gpu_clock_offset = self.__current_gpu_clock_offset
+                # Цикл повышения частоты GPU
+                while True:
+                    # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
+                    res = self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
+                    if res is False:
+                        print("Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
+                        print(f"Текущее значение Power Limit: {current_power_limit / 1000} W")
+                        print(f"Предыдущее значение Power Limit: {previous_power_limit / 1000} W")
+                        print(f"Текущее значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
+                        print(f"Предыдущее значение смещения частоты GPU: {previous_gpu_clock_offset} MHz")
+                        print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
+                        break
+                    # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+                    self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
+                    # Увеличить частоту GPU для прохождения следующего теста бенчмарка
+                    previous_gpu_clock_offset = self.__current_gpu_clock_offset
+                    previous_max_gpu_clock = current_max_gpu_clock
+                    current_max_gpu_clock = self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
+                    if current_max_gpu_clock == previous_max_gpu_clock:
+                        print(f"Максимальное значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz достигнуто, все возможные тесты типа {benchmark_test_type} для {current_power_limit} W пройдены")
+                        break
                 # Уменьшить Power Limit GPU для прохождения следующего теста бенчмарка
                 previous_power_limit = current_power_limit
                 current_power_limit = self.__reduce_tdp(milliwatt_reducing_value)

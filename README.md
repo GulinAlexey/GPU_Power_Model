@@ -5,6 +5,7 @@
 - Python 3.12.9
 - MongoDB 7.0
 - MSI Kombustor 4
+- NVIDIA Inspector
 - Metabase (опционально)
 
 ### Оборудование

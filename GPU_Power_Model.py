@@ -32,7 +32,7 @@ class Main:
         self.__pynvraw_handle = gpu.handle
         # Подключение к MongoDB
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
-        self.__db = self.__client["gpu_monitoring"]  # Название базы данных
+        self.__db = self.__client["gpu_benchmark_monitoring"]  # Название базы данных
         # Путь к исполняемому файлу MSI Kombustor
         self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
         self.__benchmark_name = "MSI-Kombustor-x64.exe"
@@ -343,7 +343,8 @@ class Main:
                     if res is False:
                         print("Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
                         print(f"Текущее значение Power Limit: {current_power_limit / 1000} W")
-                        print(f"Предыдущее значение Power Limit: {previous_power_limit / 1000} W")
+                        if previous_power_limit is not None:
+                            print(f"Предыдущее значение Power Limit: {previous_power_limit / 1000} W")
                         print(f"Текущее значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
                         print(f"Предыдущее значение смещения частоты GPU: {previous_gpu_clock_offset} MHz")
                         print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")

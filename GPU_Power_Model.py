@@ -38,7 +38,8 @@ class Main:
         benchmark_name = "MSI-Kombustor-x64.exe"
         log_filename = "_kombustor_log.txt"
         # Параметры командной строки для запуска теста
-        benchmark_options = "-width=1920 -height=1080 -glfurrytorus -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        self.__benchmark_type = "glfurrytorus" # Тип теста бенчмарка
+        benchmark_options = "-width=1920 -height=1080 -" + self.__benchmark_type + " -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
         # Полная команда для запуска
         self.__benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
         self.__benchmark_log_path = benchmark_folder + log_filename
@@ -108,7 +109,8 @@ class Main:
             "Max GPU Clock Frequency [MHz]": max_gpu_clock,
             "GPU Clock Frequency Offset [MHz]": self.__current_gpu_clock_offset,
             "Memory Clock Offset [MHz]": self.__current_mem_clock_offset,
-            "GPU Voltage [V]": voltage
+            "GPU Voltage [V]": voltage,
+            "Benchmark test type": self.__benchmark_type
         }
         return gpu_data
 
@@ -134,6 +136,7 @@ class Main:
         print(f"Смещение частоты GPU: {gpu_data["GPU Clock Frequency Offset [MHz]"]} MHz")
         print(f"Смещение частоты памяти: {gpu_data["Memory Clock Offset [MHz]"]} MHz")
         print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
+        print(f"Тип теста бенчмарка: {gpu_data['Benchmark test type']}")
         print("=" * 50)
 
     # Метод записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB

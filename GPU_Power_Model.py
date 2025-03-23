@@ -57,7 +57,6 @@ class Main:
         self.__default_mem_clock_offset = 0
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
 
-
     # Конец работы программы
     @staticmethod
     def __cleanup():
@@ -322,6 +321,8 @@ class Main:
                 print("Работа теста бенчмарка была остановлена. Данные параметры работы GPU являются нестабильными")
                 print(f"Нестабильное значение Power Limit: {current_power_limit / 1000} W")
                 print(f"Стабильное значение Power Limit: {previous_power_limit / 1000} W")
+                print(f"Значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
+                print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
                 return
             # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
             self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)

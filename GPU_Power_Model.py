@@ -340,15 +340,15 @@ class Main:
                     print(f"Стабильное значение Power Limit: {previous_power_limit / 1000} W")
                     print(f"Значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
                     print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
-                    return
+                    break
                 # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
                 self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
                 # Уменьшить Power Limit GPU для прохождения следующего теста бенчмарка
                 previous_power_limit = current_power_limit
                 current_power_limit = self.__reduce_tdp(milliwatt_reducing_value)
                 if current_power_limit == previous_power_limit:
-                    print(f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто, все возможные тесты пройдены")
-                    return
+                    print(f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто, все возможные тесты типа {benchmark_test_type} пройдены")
+                    break
 
 
 main = Main()

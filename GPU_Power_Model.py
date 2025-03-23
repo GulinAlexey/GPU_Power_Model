@@ -286,7 +286,7 @@ class Main:
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
 
     def main_loop(self):
-        collection = self.__db["glfurrytorus gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
+        collection = self.__db[self.__benchmark_type + " gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
 
         # Параметры времени теста (в секундах)
         time_before_start_test = 5

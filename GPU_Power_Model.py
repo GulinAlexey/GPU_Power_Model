@@ -34,15 +34,17 @@ class Main:
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_monitoring"]  # Название базы данных
         # Путь к исполняемому файлу MSI Kombustor
-        benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
-        benchmark_name = "MSI-Kombustor-x64.exe"
+        self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
+        self.__benchmark_name = "MSI-Kombustor-x64.exe"
         log_filename = "_kombustor_log.txt"
         # Параметры командной строки для запуска теста
         self.__benchmark_type = "glfurrytorus" # Тип теста бенчмарка
-        benchmark_options = "-width=1920 -height=1080 -" + self.__benchmark_type + " -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        self.__benchmark_options_part1 = "-width=1920 -height=1080 -"
+        self.__benchmark_options_part2 = " -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        benchmark_options = self.__benchmark_options_part1 + self.__benchmark_type + self.__benchmark_options_part2
         # Полная команда для запуска
-        self.__benchmark_start_command = f'"{benchmark_folder + benchmark_name}" {benchmark_options}'
-        self.__benchmark_log_path = benchmark_folder + log_filename
+        self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {benchmark_options}'
+        self.__benchmark_log_path = self.__benchmark_folder + log_filename
         # Путь и параметры для NVIDIA Inspector
         nvidia_inspector_folder = "C:\\NVIDIA_Inspector_1.9.8.7_Beta\\"
         nvidia_inspector_name = "nvidiaInspector.exe"
@@ -57,13 +59,20 @@ class Main:
         self.__default_mem_clock_offset = 0
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
 
+    # Изменить тип теста бенчмарка для запуска
+    def __change_benchmark_test_type(self, new_test_type):
+        self.__benchmark_type = new_test_type
+        benchmark_options = self.__benchmark_options_part1 + self.__benchmark_type + self.__benchmark_options_part2
+        # Полная команда для запуска
+        self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {benchmark_options}'
+
     # Конец работы программы
     @staticmethod
     def __cleanup():
         pynvml.nvmlShutdown()
         print("Работа программы завершена")
 
-    # Метод получения данных GPU
+    # Получение данных GPU
     def __get_gpu_data(self):
         # Получение информации о GPU
         try:
@@ -113,7 +122,7 @@ class Main:
         }
         return gpu_data
 
-    # Метод вывода данных о GPU
+    # Вывод данных о GPU
     @staticmethod
     def __print_gpu_data(gpu_data):
         print("=" * 50)
@@ -138,7 +147,7 @@ class Main:
         print(f"Тип теста бенчмарка: {gpu_data['Benchmark test type']}")
         print("=" * 50)
 
-    # Метод записи FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
+    # Запись FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
     @staticmethod
     def __update_fps_and_efficiency_in_collection(log_filepath, collection):
         # Регулярное выражение для строки с FPS в логе
@@ -176,7 +185,7 @@ class Main:
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
 
-    # Метод - проверка, что работа бенчмарка была завершена корректно
+    # Проверка, что работа бенчмарка была завершена корректно
     def __check_benchmark_log_for_normal_shutdown(self):
         try:
             with open(self.__benchmark_log_path, 'r') as log_file:
@@ -189,7 +198,7 @@ class Main:
             print(f"Произошла ошибка: {e}")
             return False
 
-    # Метод - запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
+    # Запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
     def __run_benchmark(self, collection, benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test):
         benchmark_process = None  # Инициализация переменной
         total_time = time_before_start_test + time_test_running + time_after_finish_test
@@ -222,7 +231,7 @@ class Main:
         if not self.__check_benchmark_log_for_normal_shutdown(): # Проверка, что работа бенчмарка была завершена корректно
             return False
 
-    # Метод вывода данных о TDP и Power Limit
+    # Вывод данных о TDP и Power Limit
     def __print_tdp_info(self):
         power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
         power_limit_default = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.__handle)
@@ -234,7 +243,7 @@ class Main:
         print(f"Ограничения Power Limit: {power_limit_constraints[0] / 1000} W - {power_limit_constraints[1] / 1000} W")  # max Power Limit = 100% TDP
         print(f"Ограничения TDP: {(power_limit_constraints[0] / power_limit_constraints[1]) * 100} % - 100 %")
 
-    # Метод уменьшения Power Limit GPU для прохождения следующего теста бенчмарка
+    # Уменьшение Power Limit GPU для прохождения следующего теста бенчмарка
     def __reduce_tdp(self, milliwatt_reducing_value):
         # Получение текущего Power Limit (в абсолютных величинах, а не проценты TDP)
         power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
@@ -255,7 +264,7 @@ class Main:
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, default_power_limit)
         return default_power_limit
 
-    # Метод вывода данных о min, max частотах GPU и смещении
+    # Вывод данных о min, max частотах GPU и смещении
     def __print_gpu_clock_info(self):
         # Получение частот
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0, pynvml.NVML_CLOCK_GRAPHICS)
@@ -263,7 +272,7 @@ class Main:
         print(f"Макс. частота GPU: {max_gpu_clock} MHz")
         print(f"Смещение частоты GPU: {self.__current_gpu_clock_offset} MHz")
 
-    # Метод увеличения смещения частоты GPU для прохождения следующего теста бенчмарка
+    # Увеличение смещения частоты GPU для прохождения следующего теста бенчмарка
     def __increase_gpu_clock_offset(self, megahertz_increasing_value):
         new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
@@ -274,7 +283,7 @@ class Main:
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_gpu_clock_offset))
         self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
 
-    # Метод увеличения смещения частоты памяти для прохождения следующего теста бенчмарка
+    # Увеличение смещения частоты памяти для прохождения следующего теста бенчмарка
     def __increase_mem_clock_offset(self, megahertz_increasing_value):
         new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
@@ -286,7 +295,7 @@ class Main:
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
 
     def main_loop(self):
-        collection = self.__db[self.__benchmark_type + " gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
+        collection = self.__db["gpu_data" + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")]  # Название коллекции
 
         # Параметры времени теста (в секундах)
         time_before_start_test = 5

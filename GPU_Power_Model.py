@@ -39,8 +39,9 @@ class Main:
         log_filename = "_kombustor_log.txt"
         # Параметры командной строки для запуска теста
         self.__benchmark_type = "glfurrytorus" # Тип теста бенчмарка
+        # Стандартное время теста - 60 секунд (если режим теста "бенчмарк", а не "стресс тест")
         self.__benchmark_options_part1 = "-width=1920 -height=1080 -"
-        self.__benchmark_options_part2 = " -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"  # Стандартное время теста - 60 секунд
+        self.__benchmark_options_part2 = " -benchmark -fullscreen -log_gpu_data -logfile_in_app_folder"
         benchmark_options = self.__benchmark_options_part1 + self.__benchmark_type + self.__benchmark_options_part2
         # Полная команда для запуска
         self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {benchmark_options}'
@@ -308,39 +309,46 @@ class Main:
         gpu_megahertz_increasing_value = 100 # Величина увеличения смещения частоты GPU за один тест (в MHz)
         mem_megahertz_increasing_value = 100 # Величина увеличения смещения частоты памяти за один тест (в MHz)
 
-        current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
-        previous_power_limit = None
-        self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
-        self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения частоты GPU по умолчанию
-        self.__print_gpu_clock_info()
-        self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
+        # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
+        benchmark_tests = ["glfurrytorus", "glfurrymsi", "glmsi01", "glmsi02gpumedium", "glphongdonut", "glpbrdonut", "gltessyspherex32"]
 
-        # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
-        # self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
-        # self.__print_gpu_clock_info()
+        # Сбор данных для нескольких разных типов тестов бенчмарка
+        for benchmark_test_type in benchmark_tests:
+            self.__change_benchmark_test_type(benchmark_test_type)
+            # Вернуть параметры работы GPU и памяти по умолчанию
+            current_power_limit = self.__set_tdp_to_default()  # Вернуть значение Power Limit GPU по умолчанию
+            previous_power_limit = None
+            self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
+            self.__set_gpu_clock_offset_to_default() # Вернуть значение смещения частоты GPU по умолчанию
+            self.__print_gpu_clock_info()
+            self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
 
-        # Изменить смещение частоты памяти (TODO должно быть внутри цикла тестов)
-        # self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
+            # Изменить смещение частоты GPU (TODO должно быть внутри цикла тестов)
+            # self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
+            # self.__print_gpu_clock_info()
 
-        # Цикл андервольтинга и тестирования
-        while True:
-            # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
-            res = self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
-            if res is False:
-                print("Работа теста бенчмарка была остановлена. Данные параметры работы GPU являются нестабильными")
-                print(f"Нестабильное значение Power Limit: {current_power_limit / 1000} W")
-                print(f"Стабильное значение Power Limit: {previous_power_limit / 1000} W")
-                print(f"Значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
-                print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
-                return
-            # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
-            self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
-            # Уменьшить Power Limit GPU для прохождения следующего теста бенчмарка
-            previous_power_limit = current_power_limit
-            current_power_limit = self.__reduce_tdp(milliwatt_reducing_value)
-            if current_power_limit == previous_power_limit:
-                print(f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто, все возможные тесты пройдены")
-                return
+            # Изменить смещение частоты памяти (TODO должно быть внутри цикла тестов)
+            # self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
+
+            # Цикл андервольтинга и тестирования
+            while True:
+                # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
+                res = self.__run_benchmark(collection, self.__benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test)
+                if res is False:
+                    print("Работа теста бенчмарка была остановлена. Данные параметры работы GPU являются нестабильными")
+                    print(f"Нестабильное значение Power Limit: {current_power_limit / 1000} W")
+                    print(f"Стабильное значение Power Limit: {previous_power_limit / 1000} W")
+                    print(f"Значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz")
+                    print(f"Значение смещения частоты памяти: {self.__current_mem_clock_offset} MHz")
+                    return
+                # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+                self.__update_fps_and_efficiency_in_collection(self.__benchmark_log_path, collection)
+                # Уменьшить Power Limit GPU для прохождения следующего теста бенчмарка
+                previous_power_limit = current_power_limit
+                current_power_limit = self.__reduce_tdp(milliwatt_reducing_value)
+                if current_power_limit == previous_power_limit:
+                    print(f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто, все возможные тесты пройдены")
+                    return
 
 
 main = Main()

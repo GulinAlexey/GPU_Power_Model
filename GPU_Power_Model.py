@@ -335,9 +335,6 @@ class Main:
             self.__print_tdp_info()  # Вывод данных о TDP и Power Limit
             self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
 
-            # Изменить смещение частоты памяти (TODO должно быть внутри цикла тестов)
-            # self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
-
             # Цикл андервольтинга и тестирования
             # Цикл снижения Power Limit
             while True:

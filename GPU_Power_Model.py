@@ -312,7 +312,11 @@ class Main:
         watt_reducing_value = 5 # Величина уменьшения Power Limit за один тест (в W)
         milliwatt_reducing_value = watt_reducing_value * 1000
 
-        gpu_megahertz_increasing_value = 100 # Величина увеличения смещения частоты GPU за один тест (в MHz)
+        # Вручную установленное max значение для смещения частоты GPU (определяется вручную на основе тестов, чтобы избежать повторного отказа видеокарты и перезагрузки при тестах)
+        # Если ручное ограничение не нужно, установить custom_max_gpu_clock = float('inf')
+        custom_max_gpu_clock_offset = 250
+
+        gpu_megahertz_increasing_value = 50 # Величина увеличения смещения частоты GPU за один тест (в MHz)
         mem_megahertz_increasing_value = 100 # Величина увеличения смещения частоты памяти за один тест (в MHz)
 
         # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
@@ -355,8 +359,8 @@ class Main:
                     previous_gpu_clock_offset = self.__current_gpu_clock_offset
                     previous_max_gpu_clock = current_max_gpu_clock
                     current_max_gpu_clock = self.__increase_gpu_clock_offset(gpu_megahertz_increasing_value)
-                    if current_max_gpu_clock == previous_max_gpu_clock:
-                        print(f"Максимальное значение смещения частоты GPU: {self.__current_gpu_clock_offset} MHz достигнуто, все возможные тесты типа {benchmark_test_type} для {current_power_limit} W пройдены")
+                    if current_max_gpu_clock == previous_max_gpu_clock or self.__current_gpu_clock_offset >= custom_max_gpu_clock_offset:
+                        print(f"Максимальное значение смещения частоты GPU: {previous_gpu_clock_offset} MHz достигнуто, все возможные тесты типа {benchmark_test_type} для {current_power_limit} W пройдены")
                         break
                 # Уменьшить Power Limit GPU для прохождения следующего теста бенчмарка
                 previous_power_limit = current_power_limit

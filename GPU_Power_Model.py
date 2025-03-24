@@ -363,7 +363,7 @@ class Main:
                         self.__increase_mem_clock_offset(mem_megahertz_increasing_value)
                         if self.__current_mem_clock_offset >= custom_max_mem_clock_offset:
                             print(f"Максимальное значение смещения частоты памяти: {self.__current_mem_clock_offset - mem_megahertz_increasing_value
-                            } MHz достигнуто, все возможные тесты типа {benchmark_test_type} для смещения частоты {self.__current_gpu_clock_offset} и Power Limit {current_power_limit} W пройдены")
+                            } MHz достигнуто, все возможные тесты типа {benchmark_test_type} для смещения частоты {self.__current_gpu_clock_offset} MHz и Power Limit {current_power_limit} W пройдены")
                             break
                     # Увеличить частоту GPU для прохождения следующего теста бенчмарка
                     previous_gpu_clock_offset = self.__current_gpu_clock_offset

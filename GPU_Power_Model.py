@@ -346,6 +346,7 @@ class Main:
                 previous_gpu_clock_offset = self.__current_gpu_clock_offset
                 # Цикл повышения частоты GPU
                 while True:
+                    self.__set_mem_clock_offset_to_default()  # Вернуть значение смещения частоты памяти по умолчанию
                     # Цикл повышения частоты памяти
                     while True:
                         # Один запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)

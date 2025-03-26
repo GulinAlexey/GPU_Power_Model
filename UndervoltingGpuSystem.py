@@ -151,6 +151,8 @@ class UndervoltingGpuSystem:
             elif isinstance(response, tuple):
                 # Преобразовать кортеж в строку
                 response = ', '.join(map(str, response))
+            elif response is None:
+                response = "None"
             # Отправка ответа клиенту
             client_socket.send(response.encode('utf-8'))
         except Exception as e:

@@ -12,10 +12,14 @@ UNDERVOLTING_GPU_SYSTEM_PORT = 1236
 DATA_ANALYSIS_SYSTEM_ADDRESS = "localhost"
 DATA_ANALYSIS_SYSTEM_PORT = 1237
 
+TIMEOUT = 120 # Время ожидания ответа на запрос в секундах
+
 # Вызвать метод класса одной из систем через сокеты
 def call_method(address, port, method_name, *args):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        # Установка таймаута ожидания
+        client.settimeout(TIMEOUT)
         client.connect((address, port))
         # Формирование запроса
         request = f"{method_name}," + ",".join(map(str, args))
@@ -38,6 +42,8 @@ def call_method(address, port, method_name, *args):
             return True
         elif response_str.lower() == "false":
             return False
+        elif response_str is "None":
+            return None
         else:
             return response_str
     except Exception as e:

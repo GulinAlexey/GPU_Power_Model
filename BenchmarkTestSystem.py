@@ -145,7 +145,10 @@ class BenchmarkTestSystem:
                 if len(parameters) != 4:
                     response = "Метод run_benchmark требует 4 параметра"
                 else:
-                    collection_name, time_before_start_test, time_test_running, time_after_finish_test = parameters
+                    collection_name = parameters[0]
+                    time_before_start_test = int(parameters[1])
+                    time_test_running = int(parameters[2])
+                    time_after_finish_test = int(parameters[3])
                     response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
                                                     time_after_finish_test)
             else:
@@ -153,6 +156,11 @@ class BenchmarkTestSystem:
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):
                 response = str(response)
+            elif isinstance(response, tuple):
+                # Преобразовать кортеж в строку
+                response = ', '.join(map(str, response))
+            elif response is None:
+                response = "None"
             # Отправка ответа клиенту
             client_socket.send(response.encode('utf-8'))
         except Exception as e:

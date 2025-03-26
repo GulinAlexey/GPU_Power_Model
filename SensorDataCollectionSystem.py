@@ -91,7 +91,7 @@ class SensorDataCollectionSystem:
             "GPU Voltage [V]": voltage,
             "Benchmark test type": self.__benchmark_type
         }
-        return self.__gpu_data
+        return True
 
     # Вывод данных о GPU (последнее полученное в __get_gpu_data() значение)
     def __print_gpu_data(self):
@@ -268,6 +268,11 @@ class SensorDataCollectionSystem:
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):
                 response = str(response)
+            elif isinstance(response, tuple):
+                # Преобразовать кортеж в строку
+                response = ', '.join(map(str, response))
+            elif response is None:
+                response = "None"
             # Отправка ответа клиенту
             client_socket.send(response.encode('utf-8'))
         except Exception as e:

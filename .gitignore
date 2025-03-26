@@ -4,3 +4,4 @@ _scores.csv
 /trial_change_gpu_params.py
 /test_systems.py
 __pycache__/SocketSystem.cpython-312.pyc
+__pycache__/SocketCalls.cpython-312.pyc

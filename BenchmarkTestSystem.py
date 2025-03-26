@@ -39,8 +39,7 @@ class BenchmarkTestSystem:
 
     # Запись FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
     @staticmethod
-    def __update_fps_and_efficiency_in_collection(log_filepath, collection):
-        # TODO переделать принцип работы, писать в коллекцию через систему сбора данных
+    def __update_fps_and_efficiency_in_collection(log_filepath, collection_name):
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
@@ -57,25 +56,9 @@ class BenchmarkTestSystem:
                     fps = int(match.group(2))
                     # Преобразовать время из строки
                     log_datetime = f"{current_date} {log_time}"
-                    # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
-                    document = collection.find_one({"Date": log_datetime})
-                    if document:
-                        # Извлечь "Board Power Draw [W]" из документа
-                        board_power_draw = document.get("Board Power Draw [W]", None)
-                        if board_power_draw:
-                            # Рассчитать "Efficiency [FPS/W]"
-                            efficiency = fps / board_power_draw
-                            # Обновить (записать) поля "FPS" и "Efficiency [FPS/W]" в найденном документе
-                            collection.update_one({"_id": document["_id"]},
-                                                  {"$set": {"FPS": fps, "Efficiency [FPS/W]": efficiency}})
-                            # Вывести инфо о записанных значениях
-                            print(f"{log_datetime} FPS: {fps}, Эффективность [FPS/W]: {efficiency}")
-                        else:
-                            print(
-                                f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime} в коллекции MongoDB")
-                    else:
-                        print(
-                            f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
+                    # Найти соответствующий документ по дате, записать для него FPS и FPS/W и вывести результат
+                    print(SocketSystem.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
+                                                                                    collection_name, log_datetime, fps))
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
                 return False

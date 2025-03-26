@@ -179,6 +179,27 @@ class SensorDataCollectionSystem:
         print(gpu_clock_info)
         return gpu_clock_info
 
+    # Найти по дате документ в коллекции и записать для него FPS и FPS/W
+    def __calculate_fps_and_efficiency_in_collection(self, collection_name, log_datetime, fps):
+        collection = self.__db[collection_name]
+        # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
+        document = collection.find_one({"Date": log_datetime})
+        if document:
+            # Извлечь "Board Power Draw [W]" из документа
+            board_power_draw = document.get("Board Power Draw [W]", None)
+            if board_power_draw:
+                # Рассчитать "Efficiency [FPS/W]"
+                efficiency = fps / board_power_draw
+                # Обновить (записать) поля "FPS" и "Efficiency [FPS/W]" в найденном документе
+                collection.update_one({"_id": document["_id"]},
+                                      {"$set": {"FPS": fps, "Efficiency [FPS/W]": efficiency}})
+                # Вывести инфо о записанных значениях
+                return f"{log_datetime} FPS: {fps}, Эффективность [FPS/W]: {efficiency}"
+            else:
+                return f"Поле 'Board Power Draw [W]' отсутствует в документе с датой {log_datetime} в коллекции MongoDB"
+        else:
+            return f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS"
+
     # Обработка вызова метода через сокеты
     def __handle_client(self, client_socket):
         try:
@@ -234,6 +255,14 @@ class SensorDataCollectionSystem:
                     response = "Для метода print_gpu_clock_info параметры не требуются"
                 else:
                     response = self.__print_gpu_clock_info()
+            elif method_name == "calculate_fps_and_efficiency_in_collection":
+                if len(parameters) != 3:
+                    response = "Метод calculate_fps_and_efficiency_in_collection требует 3 параметра"
+                else:
+                    collection_name = parameters[0]
+                    log_datetime = parameters[1]
+                    fps = int(parameters[2])
+                    response = self.__calculate_fps_and_efficiency_in_collection(collection_name, log_datetime, fps)
             else:
                 response = "Неизвестный метод"
             # Преобразование response в строку, если оно является типа bool или int

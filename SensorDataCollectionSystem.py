@@ -181,7 +181,7 @@ class SensorDataCollectionSystem:
 
     # Найти по дате документ в коллекции и записать для него FPS и FPS/W
     def __calculate_fps_and_efficiency_in_collection(self, collection_name, log_datetime, fps):
-        collection = self.__db[collection_name]
+        collection = self.__db[collection_name.replace("['", "").replace("']", "")]
         # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
         document = collection.find_one({"Date": log_datetime})
         if document:

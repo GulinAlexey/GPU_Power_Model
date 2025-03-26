@@ -94,6 +94,10 @@ class MainTestAndCollectData:
                     print(
                         f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто, все возможные тесты типа {benchmark_test_type} пройдены")
                     break
+            # Возврат значений по умолчанию
+            SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
+            SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
+            SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset_to_default")
 
 
 main = MainTestAndCollectData()

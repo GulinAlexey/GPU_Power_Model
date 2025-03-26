@@ -176,7 +176,7 @@ class BenchmarkTestSystem:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((self.__address, self.__port))
         server.listen(5)
-        print("Сервер запущен и ожидает подключения клиентов...")
+        print("Сервер системы тестов бенчмарка GPU запущен и ожидает подключения клиентов...")
         while True:
             client_socket, addr = server.accept()
             print(f"Подключен клиент: {addr}")

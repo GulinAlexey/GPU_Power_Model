@@ -34,8 +34,6 @@ class MainTestAndCollectData:
                                   "gltessyspherex32"]
 
     def main_loop(self):
-        sensor_data_collection_system = SensorDataCollectionSystem()
-        # TODO запустить систему в отдельной консоли
         # TODO запустить остальные системы
         # Сбор данных для нескольких разных типов тестов бенчмарка
         for benchmark_test_type in self.__benchmark_tests:

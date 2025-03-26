@@ -4,6 +4,7 @@ from pynvraw import api, get_phys_gpu
 import pymongo
 from datetime import datetime
 import socket
+import threading
 import SocketSystem
 
 
@@ -92,7 +93,9 @@ class SensorDataCollectionSystem:
     # Вывод данных о GPU
     def __print_gpu_data(self):
         if self.__gpu_data is None:
-            return ""
+            self.__get_gpu_data()
+            if self.__gpu_data is None:
+                return "Получить данные с сенсоров GPU не удалось"
         gpu_data_str = "\n".join([
             "=" * 50,
             f"Дата: {self.__gpu_data['Date']}",
@@ -124,30 +127,47 @@ class SensorDataCollectionSystem:
 
     # Обработка на вызов функции через сокеты
     def __handle_client(self, client_socket):
-        request = client_socket.recv(1024).decode('utf-8')
-        print(f"Получено: {request}")
-        # Парсинг запроса
-        parts = request.split(',')
-        method_name = parts[0].strip()
-        parameters = list(map(int, parts[1:]))
-        # Вызов функции по имени
-        if method_name == "get_gpu_data":
-            if len(parameters) != 0:
-                response = "Для метода print_gpu_data параметры не требуются"
+        try:
+            # Чтение и декодирование запроса
+            request = client_socket.recv(1024).decode('utf-8')
+            print(f"Получено: {request}")
+            # Разбиение запроса на метод и параметры
+            parts = request.split(',')
+            method_name = parts[0].strip()
+            parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
+            # Вызов соответствующего метода
+            if method_name == "get_gpu_data":
+                if parameters:
+                    response = "Для метода get_gpu_data параметры не требуются"
+                else:
+                    response = self.__get_gpu_data()
+            elif method_name == "print_gpu_data":
+                if parameters:
+                    response = "Для метода print_gpu_data параметры не требуются"
+                else:
+                    response = self.__print_gpu_data()
             else:
-                response = self.__get_gpu_data()
-        elif method_name == "print_gpu_data":
-            if len(parameters) != 0:
-                response = "Для метода print_gpu_data параметры не требуются"
-            else:
-                response = self.__print_gpu_data()
-        else:
-            response = "Неизвестный метод"
-        client_socket.send(str(response).encode('utf-8'))
-        client_socket.close()
+                response = "Неизвестный метод"
+            # Отправка ответа клиенту
+            client_socket.send(response.encode('utf-8'))
+        except Exception as e:
+            print(f"Ошибка обработки клиента: {e}")
+            response = "Ошибка сервера"
+            client_socket.send(response.encode('utf-8'))
+        finally:
+            # Закрытие соединения
+            client_socket.close()
 
     def run(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((self.__address, self.__port))
         server.listen(5)
         print("Сервер запущен и ожидает подключения клиентов...")
+        while True:
+            client_socket, addr = server.accept()
+            print(f"Подключен клиент: {addr}")
+            client_handler = threading.Thread(target=self.__handle_client, args=(client_socket,))
+            client_handler.start()
+
+system = SensorDataCollectionSystem()
+system.run()

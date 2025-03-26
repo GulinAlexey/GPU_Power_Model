@@ -3,3 +3,4 @@ GPU-Z Sensor Log.csv
 _scores.csv
 /trial_change_gpu_params.py
 /test_systems.py
+__pycache__/SocketSystem.cpython-312.pyc

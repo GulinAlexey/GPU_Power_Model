@@ -34,7 +34,6 @@ class MainTestAndCollectData:
                                   "gltessyspherex32"]
 
     def main_loop(self):
-        # TODO запустить остальные системы
         # Сбор данных для нескольких разных типов тестов бенчмарка
         for benchmark_test_type in self.__benchmark_tests:
             self.__change_benchmark_test_type(benchmark_test_type)

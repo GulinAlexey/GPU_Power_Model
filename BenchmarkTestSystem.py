@@ -4,10 +4,15 @@ from datetime import datetime
 import subprocess
 import contextlib
 import time
+import socket
+import threading
+import SocketSystem
 
 
 class BenchmarkTestSystem:
     def __init__(self):
+        self.__address = SocketSystem.BENCHMARK_TEST_SYSTEM_ADDRESS
+        self.__port = SocketSystem.BENCHMARK_TEST_SYSTEM_PORT
         pyautogui.FAILSAFE = False  # Убрать исключение при эмуляции клавиши "Esc" (для выхода из бенчмарка), когда курсор - в углу экрана
         # Путь к исполняемому файлу MSI Kombustor
         self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
@@ -29,10 +34,13 @@ class BenchmarkTestSystem:
         benchmark_options = self.__benchmark_options_part1 + self.__benchmark_type + self.__benchmark_options_part2
         # Полная команда для запуска
         self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {benchmark_options}'
+        print("Тип теста изменён на " + new_test_type)
+        return True
 
     # Запись FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
     @staticmethod
     def __update_fps_and_efficiency_in_collection(log_filepath, collection):
+        # TODO переделать принцип работы, писать в коллекцию через систему сбора данных
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
@@ -70,6 +78,8 @@ class BenchmarkTestSystem:
                             f"Не найден документ с датой {log_datetime} в коллекции MongoDB для записи значения FPS")
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
+                return False
+        return True
 
     # Проверка, что работа бенчмарка была завершена корректно
     def __check_benchmark_log_for_normal_shutdown(self):
@@ -87,7 +97,6 @@ class BenchmarkTestSystem:
     # Запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
     def __run_benchmark(self, collection_name, benchmark_start_command, time_before_start_test, time_test_running,
                         time_after_finish_test):
-        collection = self.__db[collection_name]  # Название коллекции
         benchmark_process = None  # Инициализация переменной
         total_time = time_before_start_test + time_test_running + time_after_finish_test
         total_time_before_finish_test = time_before_start_test + time_test_running
@@ -102,16 +111,16 @@ class BenchmarkTestSystem:
                 pyautogui.press(
                     'esc')  # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
             # Получение данных
-            gpu_data = self.__get_gpu_data()
+            gpu_data = SocketSystem.call_method_of_sensor_data_collection_system("get_gpu_data")
             if gpu_data is None:
                 print("Не удалось получить данные с сенсоров GPU. Тест бенчмарка остановлен")
                 with contextlib.suppress(Exception):
                     benchmark_process.terminate()
                     benchmark_process.wait()
                 return False
-            collection.insert_one(gpu_data)  # Сохранение данных с сенсоров в MongoDB
+            SocketSystem.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name) # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
-            self.__print_gpu_data(gpu_data)
+            print(SocketSystem.call_method_of_sensor_data_collection_system("print_gpu_data"))
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1
@@ -120,5 +129,69 @@ class BenchmarkTestSystem:
         if not self.__check_benchmark_log_for_normal_shutdown():  # Проверка, что работа бенчмарка была завершена корректно
             return False
 
+    # Обработка вызова метода через сокеты
+    def __handle_client(self, client_socket):
+        try:
+            # Чтение и декодирование запроса
+            request = client_socket.recv(1024).decode('utf-8')
+            print(f"Получено: {request}")
+            # Разбиение запроса на метод и параметры
+            parts = request.split(',')
+            method_name = parts[0].strip()
+            parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
+
+            # Вызов соответствующего метода
+            if method_name == "change_benchmark_test_type":
+                if len(parameters) != 1:
+                    response = "Метод change_benchmark_test_type требует 1 параметр"
+                else:
+                    new_test_type = parameters[0]
+                    response = self.__change_benchmark_test_type(new_test_type)
+            elif method_name == "update_fps_and_efficiency_in_collection":
+                if len(parameters) != 2:
+                    response = "Метод update_fps_and_efficiency_in_collection требует 2 параметра"
+                else:
+                    log_filepath, collection = parameters
+                    response = self.__update_fps_and_efficiency_in_collection(log_filepath, collection)
+            elif method_name == "check_benchmark_log_for_normal_shutdown":
+                if parameters:
+                    response = "Для метода check_benchmark_log_for_normal_shutdown параметры не требуются"
+                else:
+                    response = self.__check_benchmark_log_for_normal_shutdown()
+            elif method_name == "run_benchmark":
+                if len(parameters) != 5:
+                    response = "Метод run_benchmark требует 5 параметров"
+                else:
+                    collection_name, benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test = parameters
+                    response = self.__run_benchmark(collection_name, benchmark_start_command,
+                                                    time_before_start_test, time_test_running,
+                                                    time_after_finish_test)
+            else:
+                response = "Неизвестный метод"
+            # Преобразование response в строку, если оно является типа bool или int
+            if isinstance(response, (bool, int)):
+                response = str(response)
+            # Отправка ответа клиенту
+            client_socket.send(response.encode('utf-8'))
+        except Exception as e:
+            print(f"Ошибка обработки клиента: {e}")
+            response = "Ошибка сервера"
+            client_socket.send(response.encode('utf-8'))
+        finally:
+            # Закрытие соединения
+            client_socket.close()
+
+    # Цикл обработки вызовов методов через сокеты
     def run(self):
-        pass
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.__address, self.__port))
+        server.listen(5)
+        print("Сервер запущен и ожидает подключения клиентов...")
+        while True:
+            client_socket, addr = server.accept()
+            print(f"Подключен клиент: {addr}")
+            client_handler = threading.Thread(target=self.__handle_client, args=(client_socket,))
+            client_handler.start()
+
+system = BenchmarkTestSystem()
+system.run()

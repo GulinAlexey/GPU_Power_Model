@@ -90,7 +90,7 @@ class SensorDataCollectionSystem:
         }
         return self.__gpu_data
 
-    # Вывод данных о GPU
+    # Вывод данных о GPU (последнее полученное в __get_gpu_data() значение)
     def __print_gpu_data(self):
         if self.__gpu_data is None:
             self.__get_gpu_data()
@@ -122,10 +122,11 @@ class SensorDataCollectionSystem:
         print(gpu_data_str)
         return gpu_data_str
 
-    def __save_gpu_data_to_db(self):
-        pass # TODO
+    # Запись данных о GPU в БД (последнее полученное в __get_gpu_data() значение)
+    def __save_gpu_data_to_db(self, collection_name):
+        self.__db[collection_name].insert_one(self.__gpu_data)  # Сохранение данных с сенсоров в MongoDB
+        return True
 
-    # Обработка на вызов функции через сокеты
     def __handle_client(self, client_socket):
         try:
             # Чтение и декодирование запроса
@@ -135,6 +136,7 @@ class SensorDataCollectionSystem:
             parts = request.split(',')
             method_name = parts[0].strip()
             parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
+
             # Вызов соответствующего метода
             if method_name == "get_gpu_data":
                 if parameters:
@@ -146,8 +148,18 @@ class SensorDataCollectionSystem:
                     response = "Для метода print_gpu_data параметры не требуются"
                 else:
                     response = self.__print_gpu_data()
+            elif method_name == "save_gpu_data_to_db":
+                if len(parameters) != 1:
+                    response = "Метод save_gpu_data_to_db требует 1 параметр"
+                else:
+                    collection_name = parameters[0]
+                    response = self.__save_gpu_data_to_db(collection_name)
             else:
                 response = "Неизвестный метод"
+
+            # Преобразование response в строку, если оно является типа bool или int
+            if isinstance(response, (bool, int)):
+                response = str(response)
             # Отправка ответа клиенту
             client_socket.send(response.encode('utf-8'))
         except Exception as e:
@@ -158,6 +170,7 @@ class SensorDataCollectionSystem:
             # Закрытие соединения
             client_socket.close()
 
+    # Цикл обработки вызовов методов через сокеты
     def run(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((self.__address, self.__port))

@@ -31,6 +31,9 @@ class SensorDataCollectionSystem:
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_benchmark_monitoring"]  # Название базы данных
         self.__gpu_data = None
+        self.__current_gpu_clock_offset = 0
+        self.__current_mem_clock_offset = 0
+        self.__benchmark_type = "Not set"
 
     # Конец работы программы
     @staticmethod
@@ -83,10 +86,10 @@ class SensorDataCollectionSystem:
             "TDP Limit [%]": (power_limit / power_limit_constraints[1]) * 100,
             "Min GPU Clock Frequency [MHz]": min_gpu_clock,
             "Max GPU Clock Frequency [MHz]": max_gpu_clock,
-            "GPU Clock Frequency Offset [MHz]": "x", # TODO self.__current_gpu_clock_offset,
-            "Memory Clock Offset [MHz]": "x", # TODO self.__current_mem_clock_offset,
+            "GPU Clock Frequency Offset [MHz]": self.__current_gpu_clock_offset,
+            "Memory Clock Offset [MHz]": self.__current_mem_clock_offset,
             "GPU Voltage [V]": voltage,
-            "Benchmark test type": "x" # TODO self.__benchmark_type
+            "Benchmark test type": self.__benchmark_type
         }
         return self.__gpu_data
 
@@ -127,6 +130,27 @@ class SensorDataCollectionSystem:
         self.__db[collection_name].insert_one(self.__gpu_data)  # Сохранение данных с сенсоров в MongoDB
         return True
 
+    # Изменить значение смещения частоты GPU
+    def __set_gpu_clock_offset(self, offset):
+        if isinstance(offset, int):
+            self.__current_gpu_clock_offset = offset
+            return True
+        return False
+
+    # Изменить значение смещения частоты памяти
+    def __set_mem_clock_offset(self, offset):
+        if isinstance(offset, int):
+            self.__current_mem_clock_offset = offset
+            return True
+        return False
+
+    # Изменить тип теста бенчмарка
+    def __set_benchmark_type(self, benchmark_type):
+        if isinstance(benchmark_type, str):
+            self.__benchmark_type = benchmark_type
+            return True
+        return False
+
     def __handle_client(self, client_socket):
         try:
             # Чтение и декодирование запроса
@@ -154,6 +178,24 @@ class SensorDataCollectionSystem:
                 else:
                     collection_name = parameters[0]
                     response = self.__save_gpu_data_to_db(collection_name)
+            elif method_name == "set_gpu_clock_offset":
+                if len(parameters) != 1 or not parameters[0].isdigit():
+                    response = "Метод set_gpu_clock_offset требует 1 числовой параметр"
+                else:
+                    offset = int(parameters[0])
+                    response = self.__set_gpu_clock_offset(offset)
+            elif method_name == "set_mem_clock_offset":
+                if len(parameters) != 1 or not parameters[0].isdigit():
+                    response = "Метод set_mem_clock_offset требует 1 числовой параметр"
+                else:
+                    offset = int(parameters[0])
+                    response = self.__set_mem_clock_offset(offset)
+            elif method_name == "set_benchmark_type":
+                if len(parameters) != 1:
+                    response = "Метод set_benchmark_type требует 1 строковой параметр"
+                else:
+                    benchmark_type = parameters[0]
+                    response = self.__set_benchmark_type(benchmark_type)
             else:
                 response = "Неизвестный метод"
 

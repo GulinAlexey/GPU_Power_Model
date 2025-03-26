@@ -3,10 +3,14 @@ import pynvml
 from pynvraw import api, get_phys_gpu
 import pymongo
 from datetime import datetime
+import socket
+import SocketSystem
 
 
 class SensorDataCollectionSystem:
     def __init__(self):
+        self.__address = SocketSystem.SENSOR_DATA_COLLECTION_SYSTEM_ADDRESS
+        self.__port = SocketSystem.SENSOR_DATA_COLLECTION_SYSTEM_PORT
         # Регистрация метода cleanup для выполнения при завершении программы
         atexit.register(self.__cleanup)
         # Инициализация pynvml
@@ -25,6 +29,7 @@ class SensorDataCollectionSystem:
         # Подключение к MongoDB
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_benchmark_monitoring"]  # Название базы данных
+        self.__gpu_data = None
 
     # Конец работы программы
     @staticmethod
@@ -32,7 +37,7 @@ class SensorDataCollectionSystem:
         pynvml.nvmlShutdown()
         print("Работа программы завершена")
 
-        # Получение данных GPU
+    # Получение данных GPU
     def __get_gpu_data(self):
         # Получение информации о GPU
         try:
@@ -61,7 +66,7 @@ class SensorDataCollectionSystem:
         # Получение текущей даты и времени
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Формирование данных
-        gpu_data = {
+        self.__gpu_data = {
             "Date": current_time,
             "GPU Clock [MHz]": clock_info,
             "Memory Clock [MHz]": memory_clock,
@@ -77,37 +82,72 @@ class SensorDataCollectionSystem:
             "TDP Limit [%]": (power_limit / power_limit_constraints[1]) * 100,
             "Min GPU Clock Frequency [MHz]": min_gpu_clock,
             "Max GPU Clock Frequency [MHz]": max_gpu_clock,
-            "GPU Clock Frequency Offset [MHz]": self.__current_gpu_clock_offset,
-            "Memory Clock Offset [MHz]": self.__current_mem_clock_offset,
+            "GPU Clock Frequency Offset [MHz]": "x", # TODO self.__current_gpu_clock_offset,
+            "Memory Clock Offset [MHz]": "x", # TODO self.__current_mem_clock_offset,
             "GPU Voltage [V]": voltage,
-            "Benchmark test type": self.__benchmark_type
+            "Benchmark test type": "x" # TODO self.__benchmark_type
         }
-        return gpu_data
+        return self.__gpu_data
 
     # Вывод данных о GPU
-    @staticmethod
-    def __print_gpu_data(gpu_data):
-        print("=" * 50)
-        print(f"Дата: {gpu_data['Date']}")
-        print(f"Частота GPU: {gpu_data['GPU Clock [MHz]']} MHz")
-        print(f"Частота памяти: {gpu_data['Memory Clock [MHz]']} MHz")
-        print(f"Температура GPU: {gpu_data['GPU Temperature [°C]']} °C")
-        print(f"Скорость вентилятора: {gpu_data['Fan Speed [%]']}%")
-        print(f"Скорость вентилятора (RPM): {gpu_data['Fan Speed [RPM]']} RPM")
-        print(f"Используемая память: {gpu_data['Memory Used [MB]']} MB")
-        print(f"Загрузка GPU: {gpu_data['GPU Load [%]']}%")
-        print(f"Загрузка контроллера памяти: {gpu_data['Memory Controller Load [%]']}%")
-        print(f"Потребление платы: {gpu_data['Board Power Draw [W]']} W")
-        print(f"Потребление энергии: {gpu_data['Power Consumption [% TDP]']}% TDP")
-        print(f"Ограничение мощности: {gpu_data['Power Limit [W]']} W")
-        print(f"Ограничение TDP: {gpu_data['TDP Limit [%]']}%")
-        print(f"Мин. частота GPU: {gpu_data["Min GPU Clock Frequency [MHz]"]} MHz")
-        print(f"Макс. частота GPU: {gpu_data["Max GPU Clock Frequency [MHz]"]} MHz")
-        print(f"Смещение частоты GPU: {gpu_data["GPU Clock Frequency Offset [MHz]"]} MHz")
-        print(f"Смещение частоты памяти: {gpu_data["Memory Clock Offset [MHz]"]} MHz")
-        print(f"Напряжение GPU: {gpu_data['GPU Voltage [V]']} V")
-        print(f"Тип теста бенчмарка: {gpu_data['Benchmark test type']}")
-        print("=" * 50)
+    def __print_gpu_data(self):
+        if self.__gpu_data is None:
+            return ""
+        gpu_data_str = "\n".join([
+            "=" * 50,
+            f"Дата: {self.__gpu_data['Date']}",
+            f"Частота GPU: {self.__gpu_data['GPU Clock [MHz]']} MHz",
+            f"Частота памяти: {self.__gpu_data['Memory Clock [MHz]']} MHz",
+            f"Температура GPU: {self.__gpu_data['GPU Temperature [°C]']} °C",
+            f"Скорость вентилятора: {self.__gpu_data['Fan Speed [%]']}%",
+            f"Скорость вентилятора (RPM): {self.__gpu_data['Fan Speed [RPM]']} RPM",
+            f"Используемая память: {self.__gpu_data['Memory Used [MB]']} MB",
+            f"Загрузка GPU: {self.__gpu_data['GPU Load [%]']}%",
+            f"Загрузка контроллера памяти: {self.__gpu_data['Memory Controller Load [%]']}%",
+            f"Потребление платы: {self.__gpu_data['Board Power Draw [W]']} W",
+            f"Потребление энергии: {self.__gpu_data['Power Consumption [% TDP]']}% TDP",
+            f"Ограничение мощности: {self.__gpu_data['Power Limit [W]']} W",
+            f"Ограничение TDP: {self.__gpu_data['TDP Limit [%]']}%",
+            f"Мин. частота GPU: {self.__gpu_data['Min GPU Clock Frequency [MHz]']} MHz",
+            f"Макс. частота GPU: {self.__gpu_data['Max GPU Clock Frequency [MHz]']} MHz",
+            f"Смещение частоты GPU: {self.__gpu_data['GPU Clock Frequency Offset [MHz]']} MHz",
+            f"Смещение частоты памяти: {self.__gpu_data['Memory Clock Offset [MHz]']} MHz",
+            f"Напряжение GPU: {self.__gpu_data['GPU Voltage [V]']} V",
+            f"Тип теста бенчмарка: {self.__gpu_data['Benchmark test type']}",
+            "=" * 50
+        ])
+        print(gpu_data_str)
+        return gpu_data_str
+
+    def __save_gpu_data_to_db(self):
+        pass # TODO
+
+    # Обработка на вызов функции через сокеты
+    def __handle_client(self, client_socket):
+        request = client_socket.recv(1024).decode('utf-8')
+        print(f"Получено: {request}")
+        # Парсинг запроса
+        parts = request.split(',')
+        method_name = parts[0].strip()
+        parameters = list(map(int, parts[1:]))
+        # Вызов функции по имени
+        if method_name == "get_gpu_data":
+            if len(parameters) != 0:
+                response = "Для метода print_gpu_data параметры не требуются"
+            else:
+                response = self.__get_gpu_data()
+        elif method_name == "print_gpu_data":
+            if len(parameters) != 0:
+                response = "Для метода print_gpu_data параметры не требуются"
+            else:
+                response = self.__print_gpu_data()
+        else:
+            response = "Неизвестный метод"
+        client_socket.send(str(response).encode('utf-8'))
+        client_socket.close()
 
     def run(self):
-        pass
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.__address, self.__port))
+        server.listen(5)
+        print("Сервер запущен и ожидает подключения клиентов...")

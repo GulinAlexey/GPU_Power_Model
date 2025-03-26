@@ -295,5 +295,6 @@ class SensorDataCollectionSystem:
             client_handler = threading.Thread(target=self.__handle_client, args=(client_socket,))
             client_handler.start()
 
+
 system = SensorDataCollectionSystem()
 system.run()

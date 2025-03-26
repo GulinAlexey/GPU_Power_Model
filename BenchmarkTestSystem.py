@@ -58,7 +58,7 @@ class BenchmarkTestSystem:
                     log_datetime = f"{current_date} {log_time}"
                     # Найти соответствующий документ по дате, записать для него FPS и FPS/W и вывести результат
                     print(SocketCalls.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
-                                                                                    collection_name, log_datetime, fps))
+                                                                                   collection_name, log_datetime, fps))
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
                 return False
@@ -182,6 +182,7 @@ class BenchmarkTestSystem:
             print(f"Подключен клиент: {addr}")
             client_handler = threading.Thread(target=self.__handle_client, args=(client_socket,))
             client_handler.start()
+
 
 system = BenchmarkTestSystem()
 system.run()

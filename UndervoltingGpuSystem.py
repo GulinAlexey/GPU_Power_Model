@@ -78,7 +78,7 @@ class UndervoltingGpuSystem:
     def __set_gpu_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_gpu_clock_offset))
         self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
-        SocketCalls.call_method_of_sensor_data_collection_system("set_gpu_clock_offset",self.__current_gpu_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_gpu_clock_offset", self.__current_gpu_clock_offset)
         # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
@@ -89,14 +89,14 @@ class UndervoltingGpuSystem:
         new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
         self.__current_mem_clock_offset = new_clock_offset
-        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset", self.__current_mem_clock_offset)
         return self.__current_mem_clock_offset
 
     # Вернуть значение смещения частоты памяти по умолчанию
     def __set_mem_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(self.__default_mem_clock_offset))
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
-        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset", self.__current_mem_clock_offset)
         return self.__current_mem_clock_offset
 
     # Обработка вызова метода через сокеты
@@ -173,6 +173,7 @@ class UndervoltingGpuSystem:
             print(f"Подключен клиент: {addr}")
             client_handler = threading.Thread(target=self.__handle_client, args=(client_socket,))
             client_handler.start()
+
 
 system = UndervoltingGpuSystem()
 system.run()

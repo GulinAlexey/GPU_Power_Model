@@ -39,9 +39,14 @@ def call_method(address, port, method_name, *args):
     finally:
         client.close()
 
-
 def call_method_of_sensor_data_collection_system(function_name, *args):
     return call_method(SENSOR_DATA_COLLECTION_SYSTEM_ADDRESS, SENSOR_DATA_COLLECTION_SYSTEM_PORT, function_name, *args)
 
 def call_method_of_benchmark_test_system(function_name, *args):
     return call_method(BENCHMARK_TEST_SYSTEM_ADDRESS, BENCHMARK_TEST_SYSTEM_PORT, function_name, *args)
+
+def call_method_of_undervolting_gpu_system(function_name, *args):
+    return call_method(UNDERVOLTING_GPU_SYSTEM_ADDRESS, UNDERVOLTING_GPU_SYSTEM_PORT, function_name, *args)
+
+def call_method_of_data_analysis_system(function_name, *args):
+    return call_method(DATA_ANALYSIS_SYSTEM_ADDRESS, DATA_ANALYSIS_SYSTEM_PORT, function_name, *args)

@@ -144,13 +144,42 @@ class SensorDataCollectionSystem:
             return True
         return False
 
-    # Изменить тип теста бенчмарка
+    # Изменить тип теста бенчмарка (для записи в БД)
     def __set_benchmark_type(self, benchmark_type):
         if isinstance(benchmark_type, str):
             self.__benchmark_type = benchmark_type
             return True
         return False
 
+    # Вывод данных о TDP и Power Limit
+    def __print_tdp_info(self):
+        power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
+        power_limit_default = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.__handle)
+        power_limit_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.__handle)
+        tdp_info_str = "\n".join([
+            f"Текущий Power Limit: {power_limit / 1000} W",
+            f"Текущий TDP Limit: {(power_limit / power_limit_constraints[1]) * 100} %",
+            f"Power Limit по умолчанию: {power_limit_default / 1000} W",
+            f"Ограничения Power Limit: {power_limit_constraints[0] / 1000} W - {power_limit_constraints[1] / 1000} W",  # max Power Limit = 100% TDP
+            f"Ограничения TDP: {(power_limit_constraints[0] / power_limit_constraints[1]) * 100} % - 100 %"
+        ])
+        print(tdp_info_str)
+        return tdp_info_str
+
+    # Вывод данных о min, max частотах GPU и смещении
+    def __print_gpu_clock_info(self):
+        # Получение частот
+        min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
+                                                                               pynvml.NVML_CLOCK_GRAPHICS)
+        gpu_clock_info = "\n".join([
+            f"Мин. частота GPU: {min_gpu_clock} MHz",
+            f"Макс. частота GPU: {max_gpu_clock} MHz",
+            f"Смещение частоты GPU: {self.__current_gpu_clock_offset} MHz"
+        ])
+        print(gpu_clock_info)
+        return gpu_clock_info
+
+    # Обработка вызова метода через сокеты
     def __handle_client(self, client_socket):
         try:
             # Чтение и декодирование запроса
@@ -160,7 +189,6 @@ class SensorDataCollectionSystem:
             parts = request.split(',')
             method_name = parts[0].strip()
             parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
-
             # Вызов соответствующего метода
             if method_name == "get_gpu_data":
                 if parameters:
@@ -179,26 +207,35 @@ class SensorDataCollectionSystem:
                     collection_name = parameters[0]
                     response = self.__save_gpu_data_to_db(collection_name)
             elif method_name == "set_gpu_clock_offset":
-                if len(parameters) != 1 or not parameters[0].isdigit():
-                    response = "Метод set_gpu_clock_offset требует 1 числовой параметр"
+                if len(parameters) != 1:
+                    response = "Метод set_gpu_clock_offset требует 1 параметр"
                 else:
                     offset = int(parameters[0])
                     response = self.__set_gpu_clock_offset(offset)
             elif method_name == "set_mem_clock_offset":
-                if len(parameters) != 1 or not parameters[0].isdigit():
-                    response = "Метод set_mem_clock_offset требует 1 числовой параметр"
+                if len(parameters) != 1:
+                    response = "Метод set_mem_clock_offset требует 1 параметр"
                 else:
                     offset = int(parameters[0])
                     response = self.__set_mem_clock_offset(offset)
             elif method_name == "set_benchmark_type":
                 if len(parameters) != 1:
-                    response = "Метод set_benchmark_type требует 1 строковой параметр"
+                    response = "Метод set_benchmark_type требует 1 параметр"
                 else:
                     benchmark_type = parameters[0]
                     response = self.__set_benchmark_type(benchmark_type)
+            elif method_name == "print_tdp_info":
+                if parameters:
+                    response = "Для метода print_tdp_info параметры не требуются"
+                else:
+                    response = self.__print_tdp_info()
+            elif method_name == "print_gpu_clock_info":
+                if parameters:
+                    response = "Для метода print_gpu_clock_info параметры не требуются"
+                else:
+                    response = self.__print_gpu_clock_info()
             else:
                 response = "Неизвестный метод"
-
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):
                 response = str(response)

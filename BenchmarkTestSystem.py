@@ -31,6 +31,7 @@ class BenchmarkTestSystem:
     # Изменить тип теста бенчмарка для запуска
     def __change_benchmark_test_type(self, new_test_type):
         self.__benchmark_type = new_test_type
+        SocketCalls.call_method_of_sensor_data_collection_system("set_benchmark_type", new_test_type)
         benchmark_options = self.__benchmark_options_part1 + self.__benchmark_type + self.__benchmark_options_part2
         # Полная команда для запуска
         self.__benchmark_start_command = f'"{self.__benchmark_folder + self.__benchmark_name}" {benchmark_options}'

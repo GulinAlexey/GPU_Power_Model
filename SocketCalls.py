@@ -42,7 +42,7 @@ def call_method(address, port, method_name, *args):
             return True
         elif response_str.lower() == "false":
             return False
-        elif response_str is "None":
+        elif response_str == "None":
             return None
         else:
             return response_str

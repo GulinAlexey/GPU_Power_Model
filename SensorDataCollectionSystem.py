@@ -5,13 +5,13 @@ import pymongo
 from datetime import datetime
 import socket
 import threading
-import SocketSystem
+import SocketCalls
 
 
 class SensorDataCollectionSystem:
     def __init__(self):
-        self.__address = SocketSystem.SENSOR_DATA_COLLECTION_SYSTEM_ADDRESS
-        self.__port = SocketSystem.SENSOR_DATA_COLLECTION_SYSTEM_PORT
+        self.__address = SocketCalls.SENSOR_DATA_COLLECTION_SYSTEM_ADDRESS
+        self.__port = SocketCalls.SENSOR_DATA_COLLECTION_SYSTEM_PORT
         # Регистрация метода cleanup для выполнения при завершении программы
         atexit.register(self.__cleanup)
         # Инициализация pynvml

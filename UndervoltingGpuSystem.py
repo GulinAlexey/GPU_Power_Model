@@ -3,13 +3,13 @@ import pynvml
 import os
 import socket
 import threading
-import SocketSystem
+import SocketCalls
 
 
 class UndervoltingGpuSystem:
     def __init__(self):
-        self.__address = SocketSystem.UNDERVOLTING_GPU_SYSTEM_ADDRESS
-        self.__port = SocketSystem.UNDERVOLTING_GPU_SYSTEM_PORT
+        self.__address = SocketCalls.UNDERVOLTING_GPU_SYSTEM_ADDRESS
+        self.__port = SocketCalls.UNDERVOLTING_GPU_SYSTEM_PORT
         # Регистрация метода cleanup для выполнения при завершении программы
         atexit.register(self.__cleanup)
         # Инициализация pynvml
@@ -68,7 +68,7 @@ class UndervoltingGpuSystem:
         new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
         self.__current_gpu_clock_offset = new_clock_offset
-        SocketSystem.call_method_of_sensor_data_collection_system("set_gpu_clock_offset", self.__current_gpu_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_gpu_clock_offset", self.__current_gpu_clock_offset)
         # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
@@ -78,7 +78,7 @@ class UndervoltingGpuSystem:
     def __set_gpu_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(self.__default_gpu_clock_offset))
         self.__current_gpu_clock_offset = self.__default_gpu_clock_offset
-        SocketSystem.call_method_of_sensor_data_collection_system("set_gpu_clock_offset",self.__current_gpu_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_gpu_clock_offset",self.__current_gpu_clock_offset)
         # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
@@ -89,14 +89,14 @@ class UndervoltingGpuSystem:
         new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
         self.__current_mem_clock_offset = new_clock_offset
-        SocketSystem.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
         return True
 
     # Вернуть значение смещения частоты памяти по умолчанию
     def __set_mem_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(self.__default_mem_clock_offset))
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
-        SocketSystem.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
+        SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
         return True
 
     # Обработка вызова метода через сокеты

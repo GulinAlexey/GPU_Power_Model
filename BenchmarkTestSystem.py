@@ -6,13 +6,13 @@ import contextlib
 import time
 import socket
 import threading
-import SocketSystem
+import SocketCalls
 
 
 class BenchmarkTestSystem:
     def __init__(self):
-        self.__address = SocketSystem.BENCHMARK_TEST_SYSTEM_ADDRESS
-        self.__port = SocketSystem.BENCHMARK_TEST_SYSTEM_PORT
+        self.__address = SocketCalls.BENCHMARK_TEST_SYSTEM_ADDRESS
+        self.__port = SocketCalls.BENCHMARK_TEST_SYSTEM_PORT
         pyautogui.FAILSAFE = False  # Убрать исключение при эмуляции клавиши "Esc" (для выхода из бенчмарка), когда курсор - в углу экрана
         # Путь к исполняемому файлу MSI Kombustor
         self.__benchmark_folder = "C:\\Program Files\\Geeks3D\\MSI Kombustor 4 x64\\"
@@ -57,7 +57,7 @@ class BenchmarkTestSystem:
                     # Преобразовать время из строки
                     log_datetime = f"{current_date} {log_time}"
                     # Найти соответствующий документ по дате, записать для него FPS и FPS/W и вывести результат
-                    print(SocketSystem.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
+                    print(SocketCalls.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
                                                                                     collection_name, log_datetime, fps))
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
@@ -94,16 +94,16 @@ class BenchmarkTestSystem:
                 pyautogui.press(
                     'esc')  # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
             # Получение данных
-            gpu_data = SocketSystem.call_method_of_sensor_data_collection_system("get_gpu_data")
+            gpu_data = SocketCalls.call_method_of_sensor_data_collection_system("get_gpu_data")
             if gpu_data is None:
                 print("Не удалось получить данные с сенсоров GPU. Тест бенчмарка остановлен")
                 with contextlib.suppress(Exception):
                     benchmark_process.terminate()
                     benchmark_process.wait()
                 return False
-            SocketSystem.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name) # Сохранение данных с сенсоров в MongoDB
+            SocketCalls.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name) # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
-            print(SocketSystem.call_method_of_sensor_data_collection_system("print_gpu_data"))
+            print(SocketCalls.call_method_of_sensor_data_collection_system("print_gpu_data"))
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1

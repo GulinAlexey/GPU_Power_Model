@@ -39,14 +39,13 @@ class BenchmarkTestSystem:
         return True
 
     # Запись FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
-    @staticmethod
-    def __update_fps_and_efficiency_in_collection(log_filepath, collection_name):
+    def __update_fps_and_efficiency_in_collection(self, collection_name):
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
         current_date = datetime.now().strftime("%Y-%m-%d")
         # Открыть файл лога
-        with open(log_filepath, "r") as file:
+        with open(self.__benchmark_log_path, "r") as file:
             any_match_found = False
             for line in file:
                 match = re.search(log_pattern, line)
@@ -79,7 +78,7 @@ class BenchmarkTestSystem:
             return False
 
     # Запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
-    def __run_benchmark(self, collection_name, benchmark_start_command, time_before_start_test, time_test_running,
+    def __run_benchmark(self, collection_name, time_before_start_test, time_test_running,
                         time_after_finish_test):
         benchmark_process = None  # Инициализация переменной
         total_time = time_before_start_test + time_test_running + time_after_finish_test
@@ -90,7 +89,7 @@ class BenchmarkTestSystem:
         while i < total_time:
             if i == time_before_start_test:
                 # Запуск MSI Kombustor после X секунд сбора данных с сенсоров
-                benchmark_process = subprocess.Popen(benchmark_start_command, shell=True)
+                benchmark_process = subprocess.Popen(self.__benchmark_start_command, shell=True)
             if i == total_time_before_finish_test:
                 pyautogui.press(
                     'esc')  # Имитация нажатия ESC для остановки теста (окно бенчмарка должно быть активным)
@@ -132,23 +131,22 @@ class BenchmarkTestSystem:
                     new_test_type = parameters[0]
                     response = self.__change_benchmark_test_type(new_test_type)
             elif method_name == "update_fps_and_efficiency_in_collection":
-                if len(parameters) != 2:
-                    response = "Метод update_fps_and_efficiency_in_collection требует 2 параметра"
+                if len(parameters) != 1:
+                    response = "Метод update_fps_and_efficiency_in_collection требует 1 параметр"
                 else:
-                    log_filepath, collection = parameters
-                    response = self.__update_fps_and_efficiency_in_collection(log_filepath, collection)
+                    collection = parameters
+                    response = self.__update_fps_and_efficiency_in_collection(collection)
             elif method_name == "check_benchmark_log_for_normal_shutdown":
                 if parameters:
                     response = "Для метода check_benchmark_log_for_normal_shutdown параметры не требуются"
                 else:
                     response = self.__check_benchmark_log_for_normal_shutdown()
             elif method_name == "run_benchmark":
-                if len(parameters) != 5:
-                    response = "Метод run_benchmark требует 5 параметров"
+                if len(parameters) != 4:
+                    response = "Метод run_benchmark требует 4 параметра"
                 else:
-                    collection_name, benchmark_start_command, time_before_start_test, time_test_running, time_after_finish_test = parameters
-                    response = self.__run_benchmark(collection_name, benchmark_start_command,
-                                                    time_before_start_test, time_test_running,
+                    collection_name, time_before_start_test, time_test_running, time_after_finish_test = parameters
+                    response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
                                                     time_after_finish_test)
             else:
                 response = "Неизвестный метод"

@@ -72,7 +72,7 @@ class UndervoltingGpuSystem:
         # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
-        return max_gpu_clock
+        return self.__current_gpu_clock_offset, max_gpu_clock
 
     # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
@@ -82,7 +82,7 @@ class UndervoltingGpuSystem:
         # В качестве возвращаемого значения - max частота GPU, по которой можно проверить, что изменения были успешно применены
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
-        return max_gpu_clock
+        return self.__current_gpu_clock_offset, max_gpu_clock
 
     # Увеличение смещения частоты памяти для прохождения следующего теста бенчмарка
     def __increase_mem_clock_offset(self, megahertz_increasing_value):
@@ -90,14 +90,14 @@ class UndervoltingGpuSystem:
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
         self.__current_mem_clock_offset = new_clock_offset
         SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
-        return True
+        return self.__current_mem_clock_offset
 
     # Вернуть значение смещения частоты памяти по умолчанию
     def __set_mem_clock_offset_to_default(self):
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(self.__default_mem_clock_offset))
         self.__current_mem_clock_offset = self.__default_mem_clock_offset
         SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset",self.__current_mem_clock_offset)
-        return True
+        return self.__current_mem_clock_offset
 
     # Обработка вызова метода через сокеты
     def __handle_client(self, client_socket):
@@ -148,6 +148,9 @@ class UndervoltingGpuSystem:
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):
                 response = str(response)
+            elif isinstance(response, tuple):
+                # Преобразовать кортеж в строку
+                response = ', '.join(map(str, response))
             # Отправка ответа клиенту
             client_socket.send(response.encode('utf-8'))
         except Exception as e:

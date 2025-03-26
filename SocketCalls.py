@@ -23,7 +23,14 @@ def call_method(address, port, method_name, *args):
         # Получение ответа
         response = client.recv(4096)
         response_str = response.decode('utf-8')
-
+        # Попытка преобразовать строку в кортеж, если это возможно
+        try:
+            response_tuple = eval(response_str)
+            if isinstance(response_tuple, tuple):
+                return response_tuple
+        except (SyntaxError, NameError):
+            # Игнорировать ошибку, если строка не является кортежем
+            pass
         # Преобразование response в int или bool, если возможно
         if response_str.isdigit():
             return int(response_str)

@@ -1,5 +1,6 @@
 import pymongo
 import pandas as pd
+import statsmodels.api as sm
 
 
 class MainAnalyseData:
@@ -11,6 +12,7 @@ class MainAnalyseData:
         for collection_name in self.__db.list_collection_names():
             self.__collections.append(self.__db[collection_name])
 
+    # Определить коэффициент корреляции между FPS и изменяемыми параметрами работы GPU
     @staticmethod
     def __correlation_coefficient(df, method='pearson'):
         # Выбрать параметры для анализа
@@ -32,11 +34,36 @@ class MainAnalyseData:
                 correlations[benchmark] = fps_correlation.drop("FPS").to_dict()
         # Вывести результаты
         print("=" * 50)
-        print("Correlation coefficient " + method)
+        print("Коэффициент корреляции " + method)
         for benchmark, correlation in correlations.items():
-            print(f"Benchmark test type: {benchmark}")
+            print(f"Тип теста бенчмарка: {benchmark}")
             for param, corr_value in correlation.items():
                 print(f"  {param}: {corr_value:.4f}")
+
+    @staticmethod
+    def __regression_analysis(df):
+        columns = ["Benchmark test type", "Power Limit [W]",
+                   "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]", "FPS"]
+        benchmark_types = df["Benchmark test type"].unique()
+        results = {}
+        for benchmark in benchmark_types:
+            # Фильтрация данных по типу теста бенчмарка
+            subset = df[df["Benchmark test type"] == benchmark]
+            # Убрать строки с пропущенными значениями
+            subset = subset.dropna(subset=columns)
+            # Определить зависимую и независимые переменные
+            X = subset[["Power Limit [W]", "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]"]]
+            y = subset["FPS"]
+            # Добавить константу для линейной регрессии
+            X = sm.add_constant(X)
+            # Построить модель
+            model = sm.OLS(y, X).fit() # Модель линейной регрессии с использованием метода наименьших квадратов (OLS)
+            # Сохранить результаты
+            results[benchmark] = model.summary()
+        # Вывести результаты для каждого типа бенчмарка
+        for benchmark, summary in results.items():
+            print(f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n")
+
 
     def main_loop(self):
         # Получить все документы из коллекции
@@ -53,6 +80,7 @@ class MainAnalyseData:
         self.__correlation_coefficient(df, 'pearson')
         self.__correlation_coefficient(df, 'kendall')
         self.__correlation_coefficient(df, 'spearman')
+        self.__regression_analysis(df)
 
 
 main = MainAnalyseData()

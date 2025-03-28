@@ -26,9 +26,8 @@ class MainTestAndCollectData:
         self.__custom_max_mem_clock_offset = 650
 
         # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
-        self.__benchmark_tests = ["glfurrytorus", "glfurrymsi", "glmsi01", "glmsi02gpumedium", "glphongdonut",
-                                  "glpbrdonut",
-                                  "gltessyspherex32"]
+        self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus", "glfurrymsi",
+                                   "glmsi02gpumedium"]
 
     def main_loop(self):
         # Сбор данных для нескольких разных типов тестов бенчмарка

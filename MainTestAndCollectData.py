@@ -17,13 +17,17 @@ class MainTestAndCollectData:
         # Вручную установленное max значение для смещения частоты GPU (определяется вручную на основе тестов, чтобы избежать повторного отказа видеокарты и перезагрузки при тестах)
         # Если ручное ограничение не нужно, установить custom_max_gpu_clock = float('inf')
         self.__custom_max_gpu_clock_offset = 250
+        # self.__custom_max_gpu_clock_offset = 210
 
         self.__gpu_megahertz_increasing_value = 50  # Величина увеличения смещения частоты GPU за один тест (в MHz)
+        # self.__gpu_megahertz_increasing_value = 20  # Величина увеличения смещения частоты GPU за один тест (в MHz)
         self.__mem_megahertz_increasing_value = 200  # Величина увеличения смещения частоты памяти за один тест (в MHz)
+        # self.__mem_megahertz_increasing_value = 50  # Величина увеличения смещения частоты памяти за один тест (в MHz)
 
         # Вручную установленное max значение для смещения частоты GPU (определяется вручную на основе тестов, чтобы избежать повторного отказа видеокарты и перезагрузки при тестах)
         # Если ручное ограничение не нужно, установить custom_max_gpu_clock = float('inf')
         self.__custom_max_mem_clock_offset = 650
+        # self.__custom_max_mem_clock_offset = 615
 
         # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
         self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus", "glfurrymsi",

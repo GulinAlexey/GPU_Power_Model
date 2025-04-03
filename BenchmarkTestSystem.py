@@ -103,7 +103,7 @@ class BenchmarkTestSystem:
                 return False
             SocketCalls.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name) # Сохранение данных с сенсоров в MongoDB
             # Вывод данных
-            print(SocketCalls.call_method_of_sensor_data_collection_system("print_gpu_data"))
+            SocketCalls.call_method_of_sensor_data_collection_system("print_gpu_data")
             # Пауза на 1 секунду
             time.sleep(1)
             i = i + 1

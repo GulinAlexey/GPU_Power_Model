@@ -64,7 +64,6 @@ class MainAnalyseData:
         for benchmark, summary in results.items():
             print(f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n")
 
-
     def main_loop(self):
         # Получить все документы из коллекции
         all_documents = []

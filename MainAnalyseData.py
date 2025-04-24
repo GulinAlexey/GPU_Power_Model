@@ -1,6 +1,54 @@
 import pymongo
 import pandas as pd
 import statsmodels.api as sm
+import numpy as np
+import lightgbm as lgb
+import optuna
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_absolute_error
+from sklearn.preprocessing import MinMaxScaler
+import plotly.graph_objects as go
+from sklearn.preprocessing import LabelEncoder
+optuna.logging.set_verbosity(optuna.logging.WARNING)  # Отключить INFO-сообщения
+
+
+# Байесовская оптимизация параметров
+class ParameterOptimizer:
+    def __init__(self, model, test_type, alpha=0.5):
+        self.model = model
+        self.test_type = test_type
+        self.alpha = alpha
+        self.le = None  # Будет установлен далее
+
+    def __objective(self, trial):
+        if self.le is None:
+            raise ValueError("LabelEncoder не был установлен")
+        # Преобразовать test_type в числовой формат
+        test_type_num = self.le.transform([self.test_type])[0]
+        # Генерация параметров
+        params = {
+            'power_limit_w': trial.suggest_float('power_limit_w', 0.0, 1.0),
+            'gpu_clock_offset_mhz': trial.suggest_float('gpu_clock_offset_mhz', 0.0, 1.0),
+            'memory_clock_offset_mhz': trial.suggest_float('memory_clock_offset_mhz', 0.0, 1.0),
+            'benchmark_type': test_type_num
+        }
+        # Добавить остальные параметры со средними значениями
+        for feature in self.model.feature_name():
+            if feature not in params and feature != 'benchmark_type':
+                params[feature] = 0.5  # Среднее значение для нормализованных параметров
+        # Создать DataFrame со всеми признаками в правильном порядке
+        input_data = pd.DataFrame([params])
+        # Переупорядочить столбцы как при обучении
+        input_data = input_data[self.model.feature_name()]
+        # Предсказание FPS
+        fps = self.model.predict(input_data)[0]
+        # Целевая функция: компромисс между FPS и энергопотреблением
+        return (fps * (1 - self.alpha)) / (params['power_limit_w'] * self.alpha + 1e-9)
+
+    def optimize(self, n_trials=100):
+        study = optuna.create_study(direction='maximize')
+        study.optimize(self.__objective, n_trials=n_trials)
+        return study.best_params
 
 
 class MainAnalyseData:
@@ -8,9 +56,53 @@ class MainAnalyseData:
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_benchmark_monitoring"]  # Название базы данных
         # Список всех коллекций с данными в БД
-        self.__collections = []
-        for collection_name in self.__db.list_collection_names():
-            self.__collections.append(self.__db[collection_name])
+        self.__collections = [self.__db[col] for col in self.__db.list_collection_names()]
+        self.__label_encoder = LabelEncoder()  # Единый encoder для всего класса
+        self.__scaler = None
+        # Переименование колонок для LightGBM
+        # Иначе будет ошибка lightgbm.basic.LightGBMError: Do not support special JSON characters in feature name
+        self.__column_mapping = {
+            'Date': 'date',
+            'GPU Clock [MHz]': 'gpu_clock_mhz',
+            'Memory Clock [MHz]': 'memory_clock_mhz',
+            'GPU Temperature [°C]': 'gpu_temp_c',
+            'Fan Speed [%]': 'fan_speed_percent',
+            'Fan Speed [RPM]': 'fan_speed_rpm',
+            'Memory Used [MB]': 'memory_used_mb',
+            'GPU Load [%]': 'gpu_load_percent',
+            'Memory Controller Load [%]': 'memory_controller_load_percent',
+            'Board Power Draw [W]': 'board_power_draw_w',
+            'Power Consumption [% TDP]': 'power_consumption_percent_tdp',
+            'Power Limit [W]': 'power_limit_w',
+            'TDP Limit [%]': 'tdp_limit_percent',
+            'Min GPU Clock Frequency [MHz]': 'min_gpu_clock_mhz',
+            'Max GPU Clock Frequency [MHz]': 'max_gpu_clock_mhz',
+            'GPU Clock Frequency Offset [MHz]': 'gpu_clock_offset_mhz',
+            'Memory Clock Offset [MHz]': 'memory_clock_offset_mhz',
+            'GPU Voltage [V]': 'gpu_voltage_v',
+            'Benchmark test type': 'benchmark_type',
+            # 'Efficiency [FPS/W]': 'efficiency_fps_per_watt',
+            'FPS': 'fps'
+        }
+        # Все признаки без категориальных
+        self.__numeric_features = [
+            'power_limit_w',
+            'gpu_clock_offset_mhz',
+            'memory_clock_offset_mhz',
+            'gpu_temp_c',
+            'fan_speed_percent',
+            'fan_speed_rpm',
+            'memory_used_mb',
+            'gpu_load_percent',
+            'memory_controller_load_percent',
+            'board_power_draw_w',
+            'power_consumption_percent_tdp',
+            'tdp_limit_percent',
+            'min_gpu_clock_mhz',
+            'max_gpu_clock_mhz',
+            'gpu_voltage_v'
+            # 'efficiency_fps_per_watt'
+        ]
 
     # Определить коэффициент корреляции между FPS и изменяемыми параметрами работы GPU
     @staticmethod
@@ -64,6 +156,156 @@ class MainAnalyseData:
         for benchmark, summary in results.items():
             print(f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n")
 
+    # Предобработка данных
+    def __preprocess_data(self, data):
+        df = data.copy()
+        df = df.rename(columns=self.__column_mapping)
+        # Нормализация числовых параметров
+        self.__scaler = MinMaxScaler()
+        df[self.__numeric_features] = self.__scaler.fit_transform(df[self.__numeric_features])
+        # Кодирование категориального признака
+        self.__label_encoder.fit(df['benchmark_type'].astype(str).unique())
+        df['benchmark_type'] = self.__label_encoder.transform(df['benchmark_type'].astype(str))
+        return df
+
+    # Построение и оценка модели
+    def __train_fps_model(self, df):
+        # Выделение признаков и целевой переменной
+        X = df[self.__numeric_features + ['benchmark_type']].copy()
+        y = df['fps']
+        # Разделение на train/test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, stratify=X['benchmark_type']
+        )
+        # Создание Dataset
+        train_data = lgb.Dataset(
+            X_train,
+            label=y_train,
+            categorical_feature=['benchmark_type']
+        )
+        # Параметры модели
+        params = {
+            'objective': 'regression',
+            'metric': 'mae',
+            'num_leaves': 63,
+            'learning_rate': 0.05,
+            'feature_fraction': 0.8,
+            'verbose': -1,
+            'max_depth': -1  # Автоматическое определение глубины
+        }
+        # Обучение
+        model = lgb.train(params, train_data)
+        # Оценка
+        prediction = model.predict(X_test)
+        r2 = r2_score(y_test, prediction)
+        mae = mean_absolute_error(y_test, prediction)
+
+        return model, {'r2': r2, 'mae': mae}
+
+    # Анализ важности признаков
+    @staticmethod
+    def plot_feature_importance(model):
+        feature_imp = pd.DataFrame({
+            'Feature': model.feature_name(),
+            'Importance': model.feature_importance()
+        }).sort_values(by='Importance', ascending=True)
+        fig = go.Figure(go.Bar(
+            x=feature_imp['Importance'],
+            y=feature_imp['Feature'],
+            orientation='h'
+        ))
+        fig.update_layout(
+            title='Важность признаков модели',
+            xaxis_title='Важность',
+            yaxis_title='Признак'
+        )
+        fig.show()
+
+    # Преобразовать нормализованные параметры обратно в оригинальный диапазон
+    def __denormalize_params(self, params):
+        # Создать полный вектор признаков со средними значениями
+        full_params = np.full(len(self.__numeric_features), 0.5)  # Средние значения
+        # Заменить нужные параметры
+        power_idx = self.__numeric_features.index('power_limit_w')
+        gpu_idx = self.__numeric_features.index('gpu_clock_offset_mhz')
+        mem_idx = self.__numeric_features.index('memory_clock_offset_mhz')
+        full_params[power_idx] = params['power_limit_w']
+        full_params[gpu_idx] = params['gpu_clock_offset_mhz']
+        full_params[mem_idx] = params['memory_clock_offset_mhz']
+        # Обратное преобразование
+        original_params = self.__scaler.inverse_transform([full_params])[0]
+        return {
+            'power_limit_w': original_params[power_idx],
+            'gpu_clock_offset_mhz': original_params[gpu_idx],
+            'memory_clock_offset_mhz': original_params[mem_idx]
+        }
+
+    # Найти усредненные оптимальные параметры для всех типов тестов
+    def __find_optimal_for_all_tests(self, results):
+        if not results:
+            return None
+        # Собрать все параметры для денормализации
+        all_params = []
+        for test_type, params in results.items():
+            all_params.append(params)
+        # Вычислить средние значения нормализованных параметров
+        avg_params = {
+            'power_limit_w': np.mean([p['power_limit_w'] for p in all_params]),
+            'gpu_clock_offset_mhz': np.mean([p['gpu_clock_offset_mhz'] for p in all_params]),
+            'memory_clock_offset_mhz': np.mean([p['memory_clock_offset_mhz'] for p in all_params])
+        }
+        # Денормализовать усредненные параметры
+        return self.__denormalize_params(avg_params)
+
+    def __gpu_power_model(self, data):
+        # Предобработка
+        df = self.__preprocess_data(data)
+        # Обучение модели
+        model, metrics = self.__train_fps_model(df)
+        print(f"Метрики модели: R2={metrics['r2']:.3f}, MAE={metrics['mae']:.1f}")
+        # Визуализация важности признаков
+        self.plot_feature_importance(model)
+        results = {}
+        for test_type_num in df['benchmark_type'].unique():
+            # Преобразовать в строку и декодировать
+            test_type_str = self.__label_encoder.inverse_transform([test_type_num])[0]
+            optimizer = ParameterOptimizer(model, test_type_str, alpha=0.3)
+            optimizer.le = self.__label_encoder  # Передать encoder
+            try:
+                best_params = optimizer.optimize(n_trials=50)
+                results[test_type_str] = best_params
+            except Exception as e:
+                print(f"Ошибка для теста {test_type_str}: {str(e)}")
+                continue
+        # Получить минимальные и максимальные значения параметров
+        param_ranges = {
+            'power_limit_w': (self.__scaler.data_min_[0], self.__scaler.data_max_[0]),
+            'gpu_clock_offset_mhz': (self.__scaler.data_min_[1], self.__scaler.data_max_[1]),
+            'memory_clock_offset_mhz': (self.__scaler.data_min_[2], self.__scaler.data_max_[2])
+        }
+        print("\nДиапазоны параметров:")
+        print(f"  Лимит мощности: {param_ranges['power_limit_w'][0]:.0f}-{param_ranges['power_limit_w'][1]:.0f} Вт")
+        print(
+            f"  Смещение частоты GPU: {param_ranges['gpu_clock_offset_mhz'][0]:.0f}-{param_ranges['gpu_clock_offset_mhz'][1]:.0f} МГц")
+        print(
+            f"  Смещение частоты памяти: {param_ranges['memory_clock_offset_mhz'][0]:.0f}-{param_ranges['memory_clock_offset_mhz'][1]:.0f} МГц")
+        print("\nОптимальные параметры:")
+        for test_type, params in results.items():
+            # Преобразовать параметры в оригинальный диапазон
+            original_params = self.__denormalize_params(params)
+            print(f"\nТест: {test_type}")
+            print(f"  Лимит мощности (Вт): {original_params['power_limit_w']:.2f}")
+            print(f"  Смещение частоты GPU (МГц): {original_params['gpu_clock_offset_mhz']:.0f}")
+            print(f"  Смещение частоты памяти (МГц): {original_params['memory_clock_offset_mhz']:.0f}")
+        # Добавлен вывод усредненных параметров для всех тестов
+        avg_original_params = self.__find_optimal_for_all_tests(results)
+        if avg_original_params:
+            print("\nУсредненные оптимальные параметры для всех тестов:")
+            print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.2f}")
+            print(f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}")
+            print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
+        return model, results
+
     def main_loop(self):
         # Получить все документы из коллекции
         all_documents = []
@@ -76,10 +318,12 @@ class MainAnalyseData:
         # Оставить только те документы, где FPS не пустой (и не None)
         df = df[df["FPS"].notna()]
         print(f"Всего {len(df)} документов с FPS")
-        self.__correlation_coefficient(df, 'pearson')
-        self.__correlation_coefficient(df, 'kendall')
-        self.__correlation_coefficient(df, 'spearman')
-        self.__regression_analysis(df)
+        # self.__correlation_coefficient(df, 'pearson')
+        # self.__correlation_coefficient(df, 'kendall')
+        # self.__correlation_coefficient(df, 'spearman')
+        # self.__regression_analysis(df)
+        #
+        model, results = self.__gpu_power_model(df)
 
 
 main = MainAnalyseData()

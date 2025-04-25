@@ -163,6 +163,8 @@ class MainAnalyseData:
         # Нормализация числовых параметров
         self.__scaler = MinMaxScaler()
         df[self.__numeric_features] = self.__scaler.fit_transform(df[self.__numeric_features])
+        # Добавление шума к целевой переменной (15%)
+        df['fps'] = df['fps'] * (1 + np.random.normal(0, 0.15, len(df)))
         # Кодирование категориального признака
         self.__label_encoder.fit(df['benchmark_type'].astype(str).unique())
         df['benchmark_type'] = self.__label_encoder.transform(df['benchmark_type'].astype(str))

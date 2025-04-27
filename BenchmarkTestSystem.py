@@ -6,6 +6,7 @@ import contextlib
 import time
 import socket
 import threading
+import psutil
 import SocketCalls
 
 
@@ -72,9 +73,26 @@ class BenchmarkTestSystem:
                     if "Kombustor shutdown ok." in line:
                         return True
             print("Работа бенчмарка была неожиданно остановлена, запись лога прервалась")
-            return False
         except Exception as e:
             print(f"Произошла ошибка: {e}")
+            return False
+        # Проверить, что процесс бенчмарка был завершён и не висит в запущенных процессах,
+        # в противном случае принудительно его закрыть
+        proc_was_killed = False # Флаг, что процесс бенчмарка был найден и принудительно завершён
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['name'].lower() == self.__benchmark_name.lower():
+                try:
+                    print(f"Найден процесс {self.__benchmark_name} (PID: {proc.info['pid']}). Закрытие...")
+                    proc.kill()
+                    proc_was_killed = True
+                except Exception as e:
+                    print(f"Не удалось закрыть процесс: {e}")
+                    return False
+        if not proc_was_killed:
+            print(f"Процесс {self.__benchmark_name} не найден в запущенных, значит, был завершён корректно")
+            return True
+        else:
+            print(f"Процесс {self.__benchmark_name} найден и принудительно закрыт, значит, ранее завис при выполнении")
             return False
 
     # Запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)

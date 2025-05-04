@@ -97,7 +97,7 @@ class BenchmarkTestSystem:
 
     # Запуск теста бенчмарка со сбором данных в MongoDB (ограниченный по времени)
     def __run_benchmark(self, collection_name, time_before_start_test, time_test_running,
-                        time_after_finish_test):
+                        time_after_finish_test, db_name=None):
         benchmark_process = None  # Инициализация переменной
         total_time = time_before_start_test + time_test_running + time_after_finish_test
         total_time_before_finish_test = time_before_start_test + time_test_running
@@ -119,7 +119,12 @@ class BenchmarkTestSystem:
                     benchmark_process.terminate()
                     benchmark_process.wait()
                 return False
-            SocketCalls.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name) # Сохранение данных с сенсоров в MongoDB
+            if db_name is None:
+                # Сохранение данных с сенсоров в MongoDB (в БД по умолчанию)
+                SocketCalls.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name)
+            else:
+                # Сохранение данных с сенсоров в MongoDB (в определённую БД)
+                SocketCalls.call_method_of_sensor_data_collection_system("save_gpu_data_to_db", collection_name, db_name)
             # Вывод данных
             SocketCalls.call_method_of_sensor_data_collection_system("print_gpu_data")
             # Пауза на 1 секунду

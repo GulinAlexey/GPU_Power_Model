@@ -9,7 +9,9 @@ from sklearn.metrics import r2_score, mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 import plotly.graph_objects as go
 from sklearn.preprocessing import LabelEncoder
+from datetime import datetime
 from ParameterOptimizer import ParameterOptimizer
+import SocketCalls
 optuna.logging.set_verbosity(optuna.logging.WARNING)  # Отключить INFO-сообщения
 
 
@@ -65,6 +67,19 @@ class MainAnalyseData:
             'gpu_voltage_v'
             # 'efficiency_fps_per_watt'
         ]
+
+        # Параметры запуска тестов для сравнения производительности по умолчанию и производительности с оптимальными параметрами
+        # Параметры времени теста (в секундах)
+        self.__time_before_start_test = 5
+        self.__time_test_running = 30
+        self.__time_after_finish_test = 10
+        # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
+        self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus", "glfurrymsi",
+                                  "glmsi02gpumedium"]
+        self.__db_name_for_comparison_tests = "gpu_benchmark_comparison"
+        self.__default_params_collection_name = "gpu_data_default_params"
+        self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
+        self.__found_params_collection_name = "gpu_data_found_params"
 
     # Определить коэффициент корреляции между FPS и изменяемыми параметрами работы GPU
     @staticmethod
@@ -271,18 +286,34 @@ class MainAnalyseData:
         return model, results, avg_original_params
 
     # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
-    @staticmethod
-    def __run_test_with_default_params():
+    def __run_test_with_default_params(self):
+        # Вернуть значение Power Limit GPU по умолчанию
+        _ = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
+        # Вернуть значение смещения частоты GPU по умолчанию
+        _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
+        # Вернуть значение смещения частоты памяти по умолчанию
+        _ = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset_to_default")
+        self.__default_params_collection_name = self.__default_params_collection_name + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for benchmark_test_type in self.__benchmark_tests:
+            SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
+            # Один запуск теста бенчмарка со сбором данных в БД (ограниченный по времени)
+            res = SocketCalls.call_method_of_benchmark_test_system("run_benchmark",
+                                                                   self.__default_params_collection_name,
+                                                                   self.__time_before_start_test,
+                                                                   self.__time_test_running,
+                                                                   self.__time_after_finish_test,
+                                                                   self.__db_name_for_comparison_tests)
+            if res is False:
+                pass # TODO проверить результаты, если завершилось неудачно, то остановить работу
+            pass # TODO
         pass  # TODO
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
-    @staticmethod
-    def __run_test_with_default_params_and_min_power_limit():
+    def __run_test_with_default_params_and_min_power_limit(self):
         pass  # TODO
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
-    @staticmethod
-    def __run_test_with_found_params():
+    def __run_test_with_found_params(self):
         pass # TODO
 
     # Сравнение производительности по умолчанию и производительности с найденными оптимальными параметрами

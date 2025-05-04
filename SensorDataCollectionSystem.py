@@ -126,8 +126,12 @@ class SensorDataCollectionSystem:
         return gpu_data_str
 
     # Запись данных о GPU в БД (последнее полученное в __get_gpu_data() значение)
-    def __save_gpu_data_to_db(self, collection_name):
-        self.__db[collection_name].insert_one(self.__gpu_data)  # Сохранение данных с сенсоров в MongoDB
+    def __save_gpu_data_to_db(self, collection_name, db_name=None):
+        if db_name is None:
+            self.__db[collection_name].insert_one(self.__gpu_data)  # Сохранение данных с сенсоров в MongoDB
+        else:
+            # Сохранить в БД с определённым именем
+            self.__client[db_name][collection_name].insert_one(self.__gpu_data)  # Сохранение данных с сенсоров в MongoDB
         return True
 
     # Изменить значение смещения частоты GPU
@@ -222,11 +226,15 @@ class SensorDataCollectionSystem:
                 else:
                     response = self.__print_gpu_data()
             elif method_name == "save_gpu_data_to_db":
-                if len(parameters) != 1:
-                    response = "Метод save_gpu_data_to_db требует 1 параметр"
+                if len(parameters) < 1 or len(parameters) > 2:
+                    response = "Метод save_gpu_data_to_db требует 1 или 2 параметра"
                 else:
                     collection_name = parameters[0]
-                    response = self.__save_gpu_data_to_db(collection_name)
+                    if len(parameters) == 1:
+                        response = self.__save_gpu_data_to_db(collection_name)
+                    else:
+                        db_name = parameters[1]
+                        response = self.__save_gpu_data_to_db(collection_name, db_name)
             elif method_name == "set_gpu_clock_offset":
                 if len(parameters) != 1:
                     response = "Метод set_gpu_clock_offset требует 1 параметр"

@@ -168,7 +168,7 @@ class MainAnalyseData:
 
     # Анализ важности признаков
     @staticmethod
-    def plot_feature_importance(model):
+    def __plot_feature_importance(model):
         feature_imp = pd.DataFrame({
             'Feature': model.feature_name(),
             'Importance': model.feature_importance()
@@ -228,7 +228,7 @@ class MainAnalyseData:
         model, metrics = self.__train_fps_model(df)
         print(f"Метрики модели: R2={metrics['r2']:.3f}, MAE={metrics['mae']:.1f}")
         # Визуализация важности признаков
-        self.plot_feature_importance(model)
+        self.__plot_feature_importance(model)
         results = {}
         for test_type_num in df['benchmark_type'].unique():
             # Преобразовать в строку и декодировать
@@ -268,7 +268,26 @@ class MainAnalyseData:
             print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.2f}")
             print(f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}")
             print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
-        return model, results
+        return model, results, avg_original_params
+
+    # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
+    @staticmethod
+    def __run_test_with_default_params():
+        pass  # TODO
+
+    # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
+    @staticmethod
+    def __run_test_with_default_params_and_min_power_limit():
+        pass  # TODO
+
+    # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
+    @staticmethod
+    def __run_test_with_found_params():
+        pass # TODO
+
+    # Сравнение производительности по умолчанию и производительности с найденными оптимальными параметрами
+    def __calculate_difference_between_original_and_optimal_performance(self):
+        pass # TODO
 
     def main_loop(self):
         # Получить все документы из коллекции
@@ -287,7 +306,7 @@ class MainAnalyseData:
         # self.__correlation_coefficient(df, 'spearman')
         # self.__regression_analysis(df)
         #
-        model, results = self.__gpu_power_model(df)
+        model, results, optimal_params = self.__gpu_power_model(df)
 
 
 main = MainAnalyseData()

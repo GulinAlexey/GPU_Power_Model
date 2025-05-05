@@ -18,12 +18,12 @@ def log_stream(stream, log_file):
     stream.close()
 
 
-def run_all_systems_for_collect_data(python_path):
+def run_all_systems_for_analyse_data(python_path):
     app_names = [
         'SensorDataCollectionSystem.py',
         'UndervoltingGpuSystem.py',
         'BenchmarkTestSystem.py',
-        'MainTestAndCollectData.py'
+        'MainAnalyseData.py'
     ]
 
     processes = []  # Список для хранения всех запущенных процессов
@@ -51,4 +51,4 @@ def run_all_systems_for_collect_data(python_path):
     return processes
 
 
-procs = run_all_systems_for_collect_data(PYTHON_PATH)
+procs = run_all_systems_for_analyse_data(PYTHON_PATH)

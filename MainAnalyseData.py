@@ -80,6 +80,9 @@ class MainAnalyseData:
         self.__default_params_collection_name = "gpu_data_default_params"
         self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
         self.__found_params_collection_name = "gpu_data_found_params"
+        # Параметры уменьшения power limit для достижения минимального значения (для сбора данных и дальнейшего сравнения с оптим.)
+        watt_reducing_value = 5  # Величина уменьшения Power Limit за один тест (в W)
+        self.__milliwatt_reducing_value = watt_reducing_value * 1000
 
     # Определить коэффициент корреляции между FPS и изменяемыми параметрами работы GPU
     @staticmethod
@@ -304,13 +307,42 @@ class MainAnalyseData:
                                                                    self.__time_after_finish_test,
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
-                pass # TODO проверить результаты, если завершилось неудачно, то остановить работу
-            pass # TODO
-        pass  # TODO
+                print("Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
+        print("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " + self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
     def __run_test_with_default_params_and_min_power_limit(self):
-        pass  # TODO
+        # Вернуть значение смещения частоты GPU по умолчанию
+        _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
+        # Вернуть значение смещения частоты памяти по умолчанию
+        _ = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset_to_default")
+        # Вернуть значение Power Limit GPU по умолчанию
+        current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
+        while True:
+            previous_power_limit = current_power_limit
+            current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("reduce_tdp",
+                                                                                     self.__milliwatt_reducing_value)
+            if current_power_limit == previous_power_limit:
+                print(
+                    f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто")
+                break
+        self.__default_params_and_min_power_limit_collection_name = self.__default_params_and_min_power_limit_collection_name + " " + datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S")
+        for benchmark_test_type in self.__benchmark_tests:
+            SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
+            # Один запуск теста бенчмарка со сбором данных в БД (ограниченный по времени)
+            res = SocketCalls.call_method_of_benchmark_test_system("run_benchmark",
+                                                                   self.__default_params_and_min_power_limit_collection_name,
+                                                                   self.__time_before_start_test,
+                                                                   self.__time_test_running,
+                                                                   self.__time_after_finish_test,
+                                                                   self.__db_name_for_comparison_tests)
+            if res is False:
+                print("Работа теста бенчмарка типа " + benchmark_test_type
+                      + " была остановлена. Данные параметры работы GPU являются нестабильными")
+        print(f"Данные для тестов бенчмарка с параметрами по умолчанию (и минимальным Power Limit: {
+            current_power_limit / 1000} W) успешно собраны в БД {self.__db_name_for_comparison_tests} в коллекции {
+            self.__default_params_and_min_power_limit_collection_name}")
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
     def __run_test_with_found_params(self):

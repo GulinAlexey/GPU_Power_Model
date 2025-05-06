@@ -150,23 +150,27 @@ class BenchmarkTestSystem:
             if method_name == "change_benchmark_test_type":
                 if len(parameters) != 1:
                     response = "Метод change_benchmark_test_type требует 1 параметр"
+                    print(response)
                 else:
                     new_test_type = parameters[0]
                     response = self.__change_benchmark_test_type(new_test_type)
             elif method_name == "update_fps_and_efficiency_in_collection":
                 if len(parameters) != 1:
                     response = "Метод update_fps_and_efficiency_in_collection требует 1 параметр"
+                    print(response)
                 else:
                     collection = parameters
                     response = self.__update_fps_and_efficiency_in_collection(collection)
             elif method_name == "check_benchmark_log_for_normal_shutdown":
                 if parameters:
                     response = "Для метода check_benchmark_log_for_normal_shutdown параметры не требуются"
+                    print(response)
                 else:
                     response = self.__check_benchmark_log_for_normal_shutdown()
             elif method_name == "run_benchmark":
                 if len(parameters) != 4:
                     response = "Метод run_benchmark требует 4 параметра"
+                    print(response)
                 else:
                     collection_name = parameters[0]
                     time_before_start_test = int(parameters[1])
@@ -176,6 +180,7 @@ class BenchmarkTestSystem:
                                                     time_after_finish_test)
             else:
                 response = "Неизвестный метод"
+                print(response)
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):
                 response = str(response)

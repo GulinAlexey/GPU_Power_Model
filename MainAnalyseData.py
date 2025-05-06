@@ -17,8 +17,27 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)  # Отключить INFO-
 
 class MainAnalyseData:
     def __init__(self):
+        # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
+        self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus",
+                                  "glfurrymsi",
+                                  "glmsi02gpumedium"]
+        # Название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
+        self.__db_name_for_comparison_tests = "gpu_benchmark_comparison"
+        self.__found_params_collection_name = "gpu_data_found_params"
+        ######
+        # Заменить строки ниже на имена коллекций БД с параметрами по умолчанию, если они были собраны ранее. В ином случае - закомментировать их
+        self.__default_params_collection_name = "gpu_data_default_params 2025-05-06 20:09:12" # Заменить, если нужно
+        self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit 2025-05-06 20:14:34" # Заменить, если нужно
+        self.__comparison_collections_already_existed = True
+        ######
+        # Раскомментировать строки ниже, если коллекции БД с параметрами по умолчанию не были собраны ранее
+        # self.__default_params_collection_name = "gpu_data_default_params"
+        # self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
+        # self.__comparison_collections_already_existed = False
+        ######
+        # Параметры MongoDB
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
-        self.__db = self.__client["gpu_benchmark_monitoring"]  # Название базы данных
+        self.__db = self.__client["gpu_benchmark_monitoring"]  # Название БД с собранными данными для обучения модели
         # Список всех коллекций с данными в БД
         self.__collections = [self.__db[col] for col in self.__db.list_collection_names()]
         self.__label_encoder = LabelEncoder()  # Единый encoder для всего класса
@@ -67,19 +86,11 @@ class MainAnalyseData:
             'gpu_voltage_v'
             # 'efficiency_fps_per_watt'
         ]
-
         # Параметры запуска тестов для сравнения производительности по умолчанию и производительности с оптимальными параметрами
         # Параметры времени теста (в секундах)
         self.__time_before_start_test = 5
         self.__time_test_running = 30
         self.__time_after_finish_test = 10
-        # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
-        self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus", "glfurrymsi",
-                                  "glmsi02gpumedium"]
-        self.__db_name_for_comparison_tests = "gpu_benchmark_comparison"
-        self.__default_params_collection_name = "gpu_data_default_params"
-        self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
-        self.__found_params_collection_name = "gpu_data_found_params"
         # Параметры уменьшения power limit для достижения минимального значения (для сбора данных и дальнейшего сравнения с оптим.)
         watt_reducing_value = 5  # Величина уменьшения Power Limit за один тест (в W)
         self.__milliwatt_reducing_value = watt_reducing_value * 1000
@@ -372,6 +383,12 @@ class MainAnalyseData:
         # self.__regression_analysis(df)
         #
         model, results, optimal_params = self.__gpu_power_model(df)
+        if not self.__comparison_collections_already_existed:
+            print("Начат сбор данных о производительности GPU по умолчанию")
+            self.__run_test_with_default_params()
+            self.__run_test_with_default_params_and_min_power_limit()
+        else:
+            print("Сбор данных о производительности GPU по умолчанию не требуется, коллекции были собраны ранее")
 
 
 main = MainAnalyseData()

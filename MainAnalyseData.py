@@ -290,6 +290,7 @@ class MainAnalyseData:
 
     # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
     def __run_test_with_default_params(self):
+        print("Запущен сбор данных для GPU с параметрами работы по умолчанию")
         # Вернуть значение Power Limit GPU по умолчанию
         _ = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
         # Вернуть значение смещения частоты GPU по умолчанию
@@ -312,6 +313,7 @@ class MainAnalyseData:
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
     def __run_test_with_default_params_and_min_power_limit(self):
+        print("Запущен сбор данных для GPU с параметрами работы по умолчанию и минимальным Power Limit")
         # Вернуть значение смещения частоты GPU по умолчанию
         _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
         # Вернуть значение смещения частоты памяти по умолчанию

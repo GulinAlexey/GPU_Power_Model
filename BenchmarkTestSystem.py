@@ -168,16 +168,21 @@ class BenchmarkTestSystem:
                 else:
                     response = self.__check_benchmark_log_for_normal_shutdown()
             elif method_name == "run_benchmark":
-                if len(parameters) != 4:
-                    response = "Метод run_benchmark требует 4 параметра"
+                if len(parameters) < 4 or len(parameters) > 5:
+                    response = "Метод run_benchmark требует 4 или 5 параметров"
                     print(response)
                 else:
                     collection_name = parameters[0]
                     time_before_start_test = int(parameters[1])
                     time_test_running = int(parameters[2])
                     time_after_finish_test = int(parameters[3])
-                    response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
+                    if len(parameters) == 4:
+                        response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
                                                     time_after_finish_test)
+                    else:
+                        db_name = parameters[4]
+                        response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
+                                                        time_after_finish_test, db_name)
             else:
                 response = "Неизвестный метод"
                 print(response)

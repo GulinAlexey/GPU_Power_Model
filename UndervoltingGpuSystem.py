@@ -41,15 +41,13 @@ class UndervoltingGpuSystem:
         pynvml.nvmlShutdown()
         print("Работа программы завершена")
 
-    # Уменьшение Power Limit GPU для прохождения следующего теста бенчмарка
-    def __reduce_tdp(self, milliwatt_reducing_value):
-        # Получение текущего Power Limit (в абсолютных величинах, а не проценты TDP)
-        power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
+    # Изменить Power Limit GPU
+    def __set_tdp(self, milliwatt_value):
         power_limit_constraints = pynvml.nvmlDeviceGetPowerManagementLimitConstraints(self.__handle)
 
         # Уменьшение TDP
         new_power_limit = max(power_limit_constraints[0],
-                              power_limit - milliwatt_reducing_value)  # Уменьшить на X мВт
+                              milliwatt_value)  # Изменить на X мВт
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, new_power_limit)
 
         power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(self.__handle)
@@ -57,15 +55,21 @@ class UndervoltingGpuSystem:
         print(f"Новое ограничение TDP: {(power_limit / power_limit_constraints[1]) * 100} %")
         return power_limit
 
+    # Уменьшение Power Limit GPU для прохождения следующего теста бенчмарка
+    def __reduce_tdp(self, milliwatt_reducing_value):
+        # Получение текущего Power Limit (в абсолютных величинах, а не проценты TDP)
+        power_limit = pynvml.nvmlDeviceGetEnforcedPowerLimit(self.__handle)
+        return self.__set_tdp(power_limit - milliwatt_reducing_value)
+
     # Вернуть значение Power Limit GPU по умолчанию
     def __set_tdp_to_default(self):
         default_power_limit = pynvml.nvmlDeviceGetPowerManagementDefaultLimit(self.__handle)
         pynvml.nvmlDeviceSetPowerManagementLimit(self.__handle, default_power_limit)
         return default_power_limit
 
-    # Увеличение смещения частоты GPU для прохождения следующего теста бенчмарка
-    def __increase_gpu_clock_offset(self, megahertz_increasing_value):
-        new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
+    # Изменить смещение частоты GPU
+    def __set_gpu_clock_offset(self, megahertz_value):
+        new_clock_offset = megahertz_value
         os.system(self.__nvidia_inspector_gpu_clock_offset_command + str(new_clock_offset))
         self.__current_gpu_clock_offset = new_clock_offset
         SocketCalls.call_method_of_sensor_data_collection_system("set_gpu_clock_offset", self.__current_gpu_clock_offset)
@@ -73,6 +77,11 @@ class UndervoltingGpuSystem:
         min_gpu_clock, max_gpu_clock = pynvml.nvmlDeviceGetMinMaxClockOfPState(self.__handle, pynvml.NVML_PSTATE_0,
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
         return self.__current_gpu_clock_offset, max_gpu_clock
+
+    # Увеличение смещения частоты GPU для прохождения следующего теста бенчмарка
+    def __increase_gpu_clock_offset(self, megahertz_increasing_value):
+        new_clock_offset = self.__current_gpu_clock_offset + megahertz_increasing_value
+        return self.__set_gpu_clock_offset(new_clock_offset)
 
     # Вернуть значение смещения частоты GPU по умолчанию
     def __set_gpu_clock_offset_to_default(self):
@@ -84,13 +93,18 @@ class UndervoltingGpuSystem:
                                                                                pynvml.NVML_CLOCK_GRAPHICS)
         return self.__current_gpu_clock_offset, max_gpu_clock
 
-    # Увеличение смещения частоты памяти для прохождения следующего теста бенчмарка
-    def __increase_mem_clock_offset(self, megahertz_increasing_value):
-        new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
+    # Изменить смещение частоты памяти
+    def __set_mem_clock_offset(self, megahertz_value):
+        new_clock_offset = megahertz_value
         os.system(self.__nvidia_inspector_mem_clock_offset_command + str(new_clock_offset))
         self.__current_mem_clock_offset = new_clock_offset
         SocketCalls.call_method_of_sensor_data_collection_system("set_mem_clock_offset", self.__current_mem_clock_offset)
         return self.__current_mem_clock_offset
+
+    # Увеличение смещения частоты памяти для прохождения следующего теста бенчмарка
+    def __increase_mem_clock_offset(self, megahertz_increasing_value):
+        new_clock_offset = self.__current_mem_clock_offset + megahertz_increasing_value
+        return self.__set_mem_clock_offset(new_clock_offset)
 
     # Вернуть значение смещения частоты памяти по умолчанию
     def __set_mem_clock_offset_to_default(self):
@@ -110,7 +124,9 @@ class UndervoltingGpuSystem:
             method_name = parts[0].strip()
             parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
             # Вызов соответствующего метода
-            if method_name == "reduce_tdp":
+            if method_name == "set_tdp":
+                pass # TODO
+            elif method_name == "reduce_tdp":
                 if len(parameters) != 1:
                     response = "Метод reduce_tdp требует 1 параметр"
                     print(response)
@@ -123,6 +139,8 @@ class UndervoltingGpuSystem:
                     print(response)
                 else:
                     response = self.__set_tdp_to_default()
+            elif method_name == "set_gpu_clock_offset":
+                pass # TODO
             elif method_name == "increase_gpu_clock_offset":
                 if len(parameters) != 1:
                     response = "Метод increase_gpu_clock_offset требует 1 параметр"
@@ -136,6 +154,8 @@ class UndervoltingGpuSystem:
                     print(response)
                 else:
                     response = self.__set_gpu_clock_offset_to_default()
+            elif method_name == "set_mem_clock_offset":
+                pass # TODO
             elif method_name == "increase_mem_clock_offset":
                 if len(parameters) != 1:
                     response = "Метод increase_mem_clock_offset требует 1 параметр"

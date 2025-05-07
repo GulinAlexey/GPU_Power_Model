@@ -135,12 +135,12 @@ class MainAnalyseData:
             # Убрать строки с пропущенными значениями
             subset = subset.dropna(subset=columns)
             # Определить зависимую и независимые переменные
-            X = subset[["Power Limit [W]", "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]"]]
+            x = subset[["Power Limit [W]", "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]"]]
             y = subset["FPS"]
             # Добавить константу для линейной регрессии
-            X = sm.add_constant(X)
+            x = sm.add_constant(x)
             # Построить модель
-            model = sm.OLS(y, X).fit() # Модель линейной регрессии с использованием метода наименьших квадратов (OLS)
+            model = sm.OLS(y, x).fit() # Модель линейной регрессии с использованием метода наименьших квадратов (OLS)
             # Сохранить результаты
             results[benchmark] = model.summary()
         # Вывести результаты для каждого типа бенчмарка
@@ -164,15 +164,15 @@ class MainAnalyseData:
     # Построение и оценка модели
     def __train_fps_model(self, df):
         # Выделение признаков и целевой переменной
-        X = df[self.__numeric_features + ['benchmark_type']].copy()
+        x = df[self.__numeric_features + ['benchmark_type']].copy()
         y = df['fps']
         # Разделение на train/test
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=X['benchmark_type']
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2, random_state=42, stratify=x['benchmark_type']
         )
         # Создание Dataset
         train_data = lgb.Dataset(
-            X_train,
+            x_train,
             label=y_train,
             categorical_feature=['benchmark_type']
         )
@@ -189,7 +189,7 @@ class MainAnalyseData:
         # Обучение
         model = lgb.train(params, train_data)
         # Оценка
-        prediction = model.predict(X_test)
+        prediction = model.predict(x_test)
         r2 = r2_score(y_test, prediction)
         mae = mean_absolute_error(y_test, prediction)
 

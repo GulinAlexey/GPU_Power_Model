@@ -448,8 +448,33 @@ class MainAnalyseData:
         default_params_and_min_power_limit_df = dataframes[self.__default_params_and_min_power_limit_collection_name]
         found_params_df = dataframes[self.__found_params_collection_name]
         # Анализ и сравнение
-        for default_df in [default_params_df, default_params_and_min_power_limit_df]:
-            pass # TODO
+        for default_df, description in [(default_params_df,
+                                         "с параметрами по умолчанию"),
+                                        (default_params_and_min_power_limit_df,
+                                         "с параметрами по умолчанию и минимальным Power Limit")]:
+            print("=" * 50)
+            print(f"Сравнение данных работы GPU с оптимальными параметрами и работы GPU {description}.")
+            # Общее сравнение (все типы тестов вместе)
+            fps_change = (found_params_df['FPS'].mean() / default_df['FPS'].mean() - 1) * 100
+            power_change = (found_params_df['Board Power Draw [W]'].mean() / default_df[
+                'Board Power Draw [W]'].mean() - 1) * 100
+            print(f"Общие результаты (в среднем):")
+            print(f"  Изменение FPS: {fps_change:+.2f}%")
+            print(f"  Изменение энергопотребления: {power_change:+.2f}%")
+            # Сравнение по каждому типу теста
+            print("Результаты по типам тестов (в среднем):")
+            for benchmark_type in found_params_df['Benchmark test type'].unique():
+                benchmark_found = found_params_df[found_params_df['Benchmark test type'] == benchmark_type]
+                benchmark_default = default_df[default_df['Benchmark test type'] == benchmark_type]
+                if len(benchmark_default) == 0:
+                    continue
+                fps_diff = (benchmark_found['FPS'].mean() / benchmark_default['FPS'].mean() - 1) * 100
+                power_diff = (benchmark_found['Board Power Draw [W]'].mean() / benchmark_default[
+                    'Board Power Draw [W]'].mean() - 1) * 100
+                print(f"{benchmark_type}:")
+                print(f"  Изменение FPS: {fps_diff:+.2f}%")
+                print(f"  Изменение энергопотребления: {power_diff:+.2f}%")
+            print("=" * 50)
         return True
 
     def main_loop(self):
@@ -482,7 +507,8 @@ class MainAnalyseData:
         # Собрать данные работы GPU с найденными оптимальными параметрами
         self.__run_test_with_found_params(optimal_params)
         # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
-        self.__calculate_difference_between_original_and_optimal_performance()
+        if not self.__calculate_difference_between_original_and_optimal_performance():
+            print("Отсутствуют данные в коллекциях для анализа и сравнения")
 
 
 main = MainAnalyseData()

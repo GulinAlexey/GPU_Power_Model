@@ -10,6 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 import plotly.graph_objects as go
 from sklearn.preprocessing import LabelEncoder
 from datetime import datetime
+import os
 from ParameterOptimizer import ParameterOptimizer
 import SocketCalls
 optuna.logging.set_verbosity(optuna.logging.WARNING)  # Отключить INFO-сообщения
@@ -24,17 +25,11 @@ class MainAnalyseData:
         # Название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
         self.__db_name_for_comparison_tests = "gpu_benchmark_comparison"
         self.__found_params_collection_name = "gpu_data_found_params"
-        ######
-        # Заменить строки ниже на имена коллекций БД с параметрами по умолчанию, если они были собраны ранее. В ином случае - закомментировать их
-        self.__default_params_collection_name = "gpu_data_default_params 2025-05-06 20:09:12" # Заменить, если нужно
-        self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit 2025-05-06 20:14:34" # Заменить, если нужно
-        self.__comparison_collections_already_existed = True
-        ######
-        # Раскомментировать строки ниже, если коллекции БД с параметрами по умолчанию не были собраны ранее
-        # self.__default_params_collection_name = "gpu_data_default_params"
-        # self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
-        # self.__comparison_collections_already_existed = False
-        ######
+        # Имена коллекций БД с параметрами по умолчанию
+        self.__default_params_collection_name = "gpu_data_default_params"
+        self.__default_params_and_min_power_limit_collection_name = "gpu_data_default_params_and_min_power_limit"
+        # Имя файла с именами коллекций, чтобы не собирать повторно
+        self.__collection_names_file_path = "comparison_collection_names_for_analysis.txt"
         # Параметры MongoDB
         self.__client = pymongo.MongoClient("mongodb://localhost:27017/")  # Адрес сервера MongoDB
         self.__db = self.__client["gpu_benchmark_monitoring"]  # Название БД с собранными данными для обучения модели
@@ -299,6 +294,28 @@ class MainAnalyseData:
             print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
         return model, results, avg_original_params
 
+    # Записать имена коллекций с тестами параметров GPU по умолчанию (чтобы не собирать повторно)
+    def __write_collection_names(self):
+        # Записать имена коллекций в файл (предварительно очищая его)
+        with open(self.__collection_names_file_path, 'w') as file:
+            file.write(f"{self.__default_params_collection_name}\n")
+            file.write(f"{self.__default_params_and_min_power_limit_collection_name}\n")
+        print(f"Имена коллекций записаны в {self.__collection_names_file_path}")
+
+    # Считать имена коллекций с тестами параметров GPU по умолчанию из файла (если он есть)
+    def __read_and_verify_collection_names(self):
+        if not os.path.exists(self.__collection_names_file_path):
+            print(f"Файл {self.__collection_names_file_path} не найден")
+            return False
+        with open(self.__collection_names_file_path, 'r') as file:
+            lines = file.read().splitlines()
+        if len(lines) != 2:
+            print(f"Файл {self.__collection_names_file_path} должен содержать ровно 2 строки")
+            return False
+        self.__default_params_collection_name = lines[0]
+        self.__default_params_and_min_power_limit_collection_name = lines[1]
+        return True
+
     # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
     def __run_test_with_default_params(self):
         print("Запущен сбор данных для GPU с параметрами работы по умолчанию")
@@ -383,12 +400,15 @@ class MainAnalyseData:
         # self.__regression_analysis(df)
         #
         model, results, optimal_params = self.__gpu_power_model(df)
-        if not self.__comparison_collections_already_existed:
+        # Флаг, что повторно собирать коллекции с параметрами по умолчанию не нужно
+        comparison_collections_already_existed = self.__read_and_verify_collection_names()
+        if comparison_collections_already_existed:
+            print("Сбор данных о производительности GPU по умолчанию не требуется, коллекции были собраны ранее")
+        else:
             print("Начат сбор данных о производительности GPU по умолчанию")
             self.__run_test_with_default_params()
             self.__run_test_with_default_params_and_min_power_limit()
-        else:
-            print("Сбор данных о производительности GPU по умолчанию не требуется, коллекции были собраны ранее")
+            self.__write_collection_names() # Сохранить значения имён коллекций в файл
 
 
 main = MainAnalyseData()

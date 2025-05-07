@@ -125,7 +125,12 @@ class UndervoltingGpuSystem:
             parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
             # Вызов соответствующего метода
             if method_name == "set_tdp":
-                pass # TODO
+                if len(parameters) != 1:
+                    response = "Метод set_tdp требует 1 параметр"
+                    print(response)
+                else:
+                    milliwatt_value = int(parameters[0])
+                    response = self.__set_tdp(milliwatt_value)
             elif method_name == "reduce_tdp":
                 if len(parameters) != 1:
                     response = "Метод reduce_tdp требует 1 параметр"
@@ -140,7 +145,12 @@ class UndervoltingGpuSystem:
                 else:
                     response = self.__set_tdp_to_default()
             elif method_name == "set_gpu_clock_offset":
-                pass # TODO
+                if len(parameters) != 1:
+                    response = "Метод set_gpu_clock_offset требует 1 параметр"
+                    print(response)
+                else:
+                    megahertz_value = int(parameters[0])
+                    response = self.__set_gpu_clock_offset(megahertz_value)
             elif method_name == "increase_gpu_clock_offset":
                 if len(parameters) != 1:
                     response = "Метод increase_gpu_clock_offset требует 1 параметр"
@@ -155,7 +165,12 @@ class UndervoltingGpuSystem:
                 else:
                     response = self.__set_gpu_clock_offset_to_default()
             elif method_name == "set_mem_clock_offset":
-                pass # TODO
+                if len(parameters) != 1:
+                    response = "Метод set_mem_clock_offset требует 1 параметр"
+                    print(response)
+                else:
+                    megahertz_value = int(parameters[0])
+                    response = self.__set_mem_clock_offset(megahertz_value)
             elif method_name == "increase_mem_clock_offset":
                 if len(parameters) != 1:
                     response = "Метод increase_mem_clock_offset требует 1 параметр"

@@ -184,8 +184,11 @@ class SensorDataCollectionSystem:
         return gpu_clock_info
 
     # Найти по дате документ в коллекции и записать для него FPS и FPS/W
-    def __calculate_fps_and_efficiency_in_collection(self, collection_name, log_datetime, fps):
-        collection = self.__db[collection_name.replace("['", "").replace("']", "")]
+    def __calculate_fps_and_efficiency_in_collection(self, collection_name, log_datetime, fps, db_name=None):
+        if db_name is None:
+            collection = self.__db[collection_name.replace("['", "").replace("']", "")]
+        else:
+            collection = self.__client[db_name][collection_name.replace("['", "").replace("']", "")]
         # Найти документ в коллекции с полем "Date", совпадающим с log_datetime
         document = collection.find_one({"Date": log_datetime})
         if document:
@@ -272,14 +275,18 @@ class SensorDataCollectionSystem:
                 else:
                     response = self.__print_gpu_clock_info()
             elif method_name == "calculate_fps_and_efficiency_in_collection":
-                if len(parameters) != 3:
-                    response = "Метод calculate_fps_and_efficiency_in_collection требует 3 параметра"
+                if len(parameters) < 3 or len(parameters) > 4:
+                    response = "Метод calculate_fps_and_efficiency_in_collection требует 3 или 4 параметра"
                     print(response)
                 else:
                     collection_name = parameters[0]
                     log_datetime = parameters[1]
                     fps = int(parameters[2])
-                    response = self.__calculate_fps_and_efficiency_in_collection(collection_name, log_datetime, fps)
+                    if len(parameters) == 3:
+                        response = self.__calculate_fps_and_efficiency_in_collection(collection_name, log_datetime, fps)
+                    else:
+                        db_name = parameters[3]
+                        response = self.__calculate_fps_and_efficiency_in_collection(collection_name, log_datetime, fps, db_name)
             else:
                 response = "Неизвестный метод"
                 print(response)

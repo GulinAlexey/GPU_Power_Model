@@ -40,7 +40,7 @@ class BenchmarkTestSystem:
         return True
 
     # Запись FPS из файла лога MSI Kombustor (и эффективности [FPS/W]) в соответствующие документы коллекции MongoDB
-    def __update_fps_and_efficiency_in_collection(self, collection_name):
+    def __update_fps_and_efficiency_in_collection(self, collection_name, db_name=None):
         # Регулярное выражение для строки с FPS в логе
         log_pattern = re.compile(r"\((\d{2}:\d{2}:\d{2}).+ - FPS: (\d+)")
         # Текущая дата без времени
@@ -58,8 +58,12 @@ class BenchmarkTestSystem:
                     # Преобразовать время из строки
                     log_datetime = f"{current_date} {log_time}"
                     # Найти соответствующий документ по дате, записать для него FPS и FPS/W и вывести результат
-                    print(SocketCalls.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
-                                                                                   collection_name, log_datetime, fps))
+                    if db_name is None:
+                        print(SocketCalls.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
+                                                                                       collection_name, log_datetime, fps))
+                    else:
+                        print(SocketCalls.call_method_of_sensor_data_collection_system("calculate_fps_and_efficiency_in_collection",
+                                                                                       collection_name, log_datetime, fps, db_name))
             if not any_match_found:
                 print("В файле лога не было найдено значений FPS")
                 return False
@@ -155,12 +159,16 @@ class BenchmarkTestSystem:
                     new_test_type = parameters[0]
                     response = self.__change_benchmark_test_type(new_test_type)
             elif method_name == "update_fps_and_efficiency_in_collection":
-                if len(parameters) != 1:
-                    response = "Метод update_fps_and_efficiency_in_collection требует 1 параметр"
+                if len(parameters) < 1 or len(parameters) > 2:
+                    response = "Метод update_fps_and_efficiency_in_collection требует 1 или 2 параметра"
                     print(response)
                 else:
-                    collection = parameters
-                    response = self.__update_fps_and_efficiency_in_collection(collection)
+                    collection = parameters[0]
+                    if len(parameters) == 1:
+                        response = self.__update_fps_and_efficiency_in_collection(collection)
+                    else:
+                        db_name = parameters[1]
+                        response = self.__update_fps_and_efficiency_in_collection(collection, db_name)
             elif method_name == "check_benchmark_log_for_normal_shutdown":
                 if parameters:
                     response = "Для метода check_benchmark_log_for_normal_shutdown параметры не требуются"

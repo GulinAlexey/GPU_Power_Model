@@ -126,66 +126,66 @@ class UndervoltingGpuSystem:
             # Вызов соответствующего метода
             if method_name == "set_tdp":
                 if len(parameters) != 1:
-                    response = "Метод set_tdp требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     milliwatt_value = int(parameters[0])
                     response = self.__set_tdp(milliwatt_value)
             elif method_name == "reduce_tdp":
                 if len(parameters) != 1:
-                    response = "Метод reduce_tdp требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     milliwatt_reducing_value = int(parameters[0])
                     response = self.__reduce_tdp(milliwatt_reducing_value)
             elif method_name == "set_tdp_to_default":
                 if parameters:
-                    response = "Для метода set_tdp_to_default параметры не требуются"
+                    response = f"Для метода {method_name} set_tdp_to_default параметры не требуются"
                     print(response)
                 else:
                     response = self.__set_tdp_to_default()
             elif method_name == "set_gpu_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод set_gpu_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     megahertz_value = int(parameters[0])
                     response = self.__set_gpu_clock_offset(megahertz_value)
             elif method_name == "increase_gpu_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод increase_gpu_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     megahertz_increasing_value = int(parameters[0])
                     response = self.__increase_gpu_clock_offset(megahertz_increasing_value)
             elif method_name == "set_gpu_clock_offset_to_default":
                 if parameters:
-                    response = "Для метода set_gpu_clock_offset_to_default параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__set_gpu_clock_offset_to_default()
             elif method_name == "set_mem_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод set_mem_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     megahertz_value = int(parameters[0])
                     response = self.__set_mem_clock_offset(megahertz_value)
             elif method_name == "increase_mem_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод increase_mem_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     megahertz_increasing_value = int(parameters[0])
                     response = self.__increase_mem_clock_offset(megahertz_increasing_value)
             elif method_name == "set_mem_clock_offset_to_default":
                 if parameters:
-                    response = "Для метода set_mem_clock_offset_to_default параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__set_mem_clock_offset_to_default()
             else:
-                response = "Неизвестный метод"
+                response = f"Неизвестный метод {method_name}"
                 print(response)
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):

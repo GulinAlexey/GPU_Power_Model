@@ -153,14 +153,14 @@ class BenchmarkTestSystem:
             # Вызов соответствующего метода
             if method_name == "change_benchmark_test_type":
                 if len(parameters) != 1:
-                    response = "Метод change_benchmark_test_type требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     new_test_type = parameters[0]
                     response = self.__change_benchmark_test_type(new_test_type)
             elif method_name == "update_fps_and_efficiency_in_collection":
                 if len(parameters) < 1 or len(parameters) > 2:
-                    response = "Метод update_fps_and_efficiency_in_collection требует 1 или 2 параметра"
+                    response = f"Метод {method_name} требует 1 или 2 параметра"
                     print(response)
                 else:
                     collection = parameters[0]
@@ -171,13 +171,13 @@ class BenchmarkTestSystem:
                         response = self.__update_fps_and_efficiency_in_collection(collection, db_name)
             elif method_name == "check_benchmark_log_for_normal_shutdown":
                 if parameters:
-                    response = "Для метода check_benchmark_log_for_normal_shutdown параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__check_benchmark_log_for_normal_shutdown()
             elif method_name == "run_benchmark":
                 if len(parameters) < 4 or len(parameters) > 5:
-                    response = "Метод run_benchmark требует 4 или 5 параметров"
+                    response = f"Метод {method_name} требует 4 или 5 параметров"
                     print(response)
                 else:
                     collection_name = parameters[0]
@@ -192,7 +192,7 @@ class BenchmarkTestSystem:
                         response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
                                                         time_after_finish_test, db_name)
             else:
-                response = "Неизвестный метод"
+                response = f"Неизвестный метод {method_name}"
                 print(response)
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):

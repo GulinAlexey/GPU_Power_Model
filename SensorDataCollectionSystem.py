@@ -220,19 +220,19 @@ class SensorDataCollectionSystem:
             # Вызов соответствующего метода
             if method_name == "get_gpu_data":
                 if parameters:
-                    response = "Для метода get_gpu_data параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__get_gpu_data()
             elif method_name == "print_gpu_data":
                 if parameters:
-                    response = "Для метода print_gpu_data параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__print_gpu_data()
             elif method_name == "save_gpu_data_to_db":
                 if len(parameters) < 1 or len(parameters) > 2:
-                    response = "Метод save_gpu_data_to_db требует 1 или 2 параметра"
+                    response = f"Метод {method_name} требует 1 или 2 параметра"
                     print(response)
                 else:
                     collection_name = parameters[0]
@@ -243,40 +243,40 @@ class SensorDataCollectionSystem:
                         response = self.__save_gpu_data_to_db(collection_name, db_name)
             elif method_name == "set_gpu_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод set_gpu_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     offset = int(parameters[0])
                     response = self.__set_gpu_clock_offset(offset)
             elif method_name == "set_mem_clock_offset":
                 if len(parameters) != 1:
-                    response = "Метод set_mem_clock_offset требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     offset = int(parameters[0])
                     response = self.__set_mem_clock_offset(offset)
             elif method_name == "set_benchmark_type":
                 if len(parameters) != 1:
-                    response = "Метод set_benchmark_type требует 1 параметр"
+                    response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
                     benchmark_type = parameters[0]
                     response = self.__set_benchmark_type(benchmark_type)
             elif method_name == "print_tdp_info":
                 if parameters:
-                    response = "Для метода print_tdp_info параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__print_tdp_info()
             elif method_name == "print_gpu_clock_info":
                 if parameters:
-                    response = "Для метода print_gpu_clock_info параметры не требуются"
+                    response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
                     response = self.__print_gpu_clock_info()
             elif method_name == "calculate_fps_and_efficiency_in_collection":
                 if len(parameters) < 3 or len(parameters) > 4:
-                    response = "Метод calculate_fps_and_efficiency_in_collection требует 3 или 4 параметра"
+                    response = f"Метод {method_name} требует 3 или 4 параметра"
                     print(response)
                 else:
                     collection_name = parameters[0]
@@ -288,7 +288,7 @@ class SensorDataCollectionSystem:
                         db_name = parameters[3]
                         response = self.__calculate_fps_and_efficiency_in_collection(collection_name, log_datetime, fps, db_name)
             else:
-                response = "Неизвестный метод"
+                response = f"Неизвестный метод {method_name}"
                 print(response)
             # Преобразование response в строку, если оно является типа bool или int
             if isinstance(response, (bool, int)):

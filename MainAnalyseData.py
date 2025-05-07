@@ -24,6 +24,7 @@ class MainAnalyseData:
                                   "glmsi02gpumedium"]
         # Название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
         self.__db_name_for_comparison_tests = "gpu_benchmark_comparison"
+        # Имя коллекции БД с оптимальными параметрами
         self.__found_params_collection_name = "gpu_data_found_params"
         # Имена коллекций БД с параметрами по умолчанию
         self.__default_params_collection_name = "gpu_data_default_params"
@@ -337,6 +338,9 @@ class MainAnalyseData:
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
                 print("Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
+            # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+            SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
+                                                             self.__default_params_collection_name, self.__db_name_for_comparison_tests)
         print("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " +
               self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
 
@@ -371,6 +375,10 @@ class MainAnalyseData:
             if res is False:
                 print("Работа теста бенчмарка типа " + benchmark_test_type
                       + " была остановлена. Данные параметры работы GPU являются нестабильными")
+            # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+            SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
+                                                             self.__default_params_and_min_power_limit_collection_name,
+                                                             self.__db_name_for_comparison_tests)
         print(f"Данные для тестов бенчмарка с параметрами по умолчанию (и минимальным Power Limit: {
             current_power_limit / 1000} W) успешно собраны в БД {self.__db_name_for_comparison_tests} в коллекции {
             self.__default_params_and_min_power_limit_collection_name}")
@@ -409,11 +417,14 @@ class MainAnalyseData:
             if res is False:
                 print("Работа теста бенчмарка типа " + benchmark_test_type
                       + " была остановлена. Данные параметры работы GPU являются нестабильными")
+            # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
+            SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
+                                                             self.__found_params_collection_name, self.__db_name_for_comparison_tests)
         print(f"Данные для тестов бенчмарка с оптимальными параметрами по умолчанию успешно собраны в БД {
             self.__db_name_for_comparison_tests} в коллекции {
             self.__found_params_collection_name}")
 
-    # Сравнение производительности по умолчанию и производительности с найденными оптимальными параметрами
+    # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
         pass # TODO
 

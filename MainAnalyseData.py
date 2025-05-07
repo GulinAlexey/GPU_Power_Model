@@ -426,7 +426,54 @@ class MainAnalyseData:
 
     # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
-        pass # TODO
+        # DataFrame для данных с параметрами по умолчанию
+        default_params_df = pd.DataFrame(list(self.__client[self.__db_name_for_comparison_tests][self.__default_params_collection_name].find()))
+        print(f"Всего {len(default_params_df)} документов в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию")
+        if len(default_params_df) == 0:
+            print(f"Нет данных в коллекции {self.__default_params_collection_name} для анализа и сравнения")
+            return False
+        # Оставить только те документы, где FPS не пустой (и не None)
+        default_params_df = default_params_df[default_params_df["FPS"].notna()]
+        print(f"Всего {len(default_params_df)} документов с FPS в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию")
+        if len(default_params_df) == 0:
+            print(f"Нет данных в коллекции {self.__default_params_collection_name} для анализа и сравнения")
+            return False
+
+        # DataFrame для данных с параметрами по умолчанию и min Power Limit
+        default_params_and_min_power_limit_df = pd.DataFrame(
+            list(self.__client[self.__db_name_for_comparison_tests][self.__default_params_and_min_power_limit_collection_name].find()))
+        print(f"Всего {len(
+            default_params_and_min_power_limit_df
+            )} документов в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию и минимальным Power Limit")
+        if len(default_params_and_min_power_limit_df) == 0:
+            print(f"Нет данных в коллекции {self.__default_params_and_min_power_limit_collection_name} для анализа и сравнения")
+            return False
+        # Оставить только те документы, где FPS не пустой (и не None)
+        default_params_and_min_power_limit_df = default_params_and_min_power_limit_df[default_params_and_min_power_limit_df["FPS"].notna()]
+        print(f"Всего {len(
+            default_params_and_min_power_limit_df
+            )} документов с FPS в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию и минимальным Power Limit")
+        if len(default_params_and_min_power_limit_df) == 0:
+            print(f"Нет данных в коллекции {self.__default_params_and_min_power_limit_collection_name} для анализа и сравнения")
+            return False
+
+        # DataFrame для данных с найденными оптимальными параметрами
+        found_params_df = pd.DataFrame(
+            list(self.__client[self.__db_name_for_comparison_tests][self.__found_params_collection_name].find()))
+        print(
+            f"Всего {len(found_params_df)} документов в коллекции данных с сенсоров при работе GPU с найденными оптимальными параметрами")
+        if len(found_params_df) == 0:
+            print(f"Нет данных в коллекции {self.__found_params_collection_name} для анализа и сравнения")
+            return False
+        # Оставить только те документы, где FPS не пустой (и не None)
+        found_params_df = found_params_df[found_params_df["FPS"].notna()]
+        print(
+            f"Всего {len(found_params_df)} документов с FPS в коллекции данных с сенсоров при работе GPU с найденными оптимальными параметрами")
+        if len(found_params_df) == 0:
+            print(f"Нет данных в коллекции {self.__found_params_collection_name} для анализа и сравнения")
+            return False
+        # TODO
+        return True
 
     def main_loop(self):
         # Получить все документы из коллекции
@@ -457,6 +504,8 @@ class MainAnalyseData:
             self.__write_collection_names() # Сохранить значения имён коллекций в файл
         # Собрать данные работы GPU с найденными оптимальными параметрами
         self.__run_test_with_found_params(optimal_params)
+        # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
+        self.__calculate_difference_between_original_and_optimal_performance()
 
 
 main = MainAnalyseData()

@@ -282,14 +282,14 @@ class MainAnalyseData:
             # Преобразовать параметры в оригинальный диапазон
             original_params = self.__denormalize_params(params)
             print(f"\nТест: {test_type}")
-            print(f"  Лимит мощности (Вт): {original_params['power_limit_w']:.2f}")
+            print(f"  Лимит мощности (Вт): {original_params['power_limit_w']:.3f}")
             print(f"  Смещение частоты GPU (МГц): {original_params['gpu_clock_offset_mhz']:.0f}")
             print(f"  Смещение частоты памяти (МГц): {original_params['memory_clock_offset_mhz']:.0f}")
         # Добавлен вывод усредненных параметров для всех тестов
         avg_original_params = self.__find_optimal_for_all_tests(results)
         if avg_original_params:
             print("\nУсредненные оптимальные параметры для всех тестов:")
-            print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.2f}")
+            print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.3f}")
             print(f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}")
             print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
         return model, results, avg_original_params
@@ -337,7 +337,8 @@ class MainAnalyseData:
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
                 print("Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
-        print("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " + self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
+        print("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " +
+              self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
     def __run_test_with_default_params_and_min_power_limit(self):
@@ -356,8 +357,8 @@ class MainAnalyseData:
                 print(
                     f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто")
                 break
-        self.__default_params_and_min_power_limit_collection_name = self.__default_params_and_min_power_limit_collection_name + " " + datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S")
+        self.__default_params_and_min_power_limit_collection_name = (self.__default_params_and_min_power_limit_collection_name
+                                                                     + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         for benchmark_test_type in self.__benchmark_tests:
             SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
             # Один запуск теста бенчмарка со сбором данных в БД (ограниченный по времени)
@@ -375,8 +376,42 @@ class MainAnalyseData:
             self.__default_params_and_min_power_limit_collection_name}")
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
-    def __run_test_with_found_params(self):
-        pass # TODO
+    def __run_test_with_found_params(self, optimal_params):
+        print("Запущен сбор данных для GPU с оптимальными параметрами:")
+        print(f"  Лимит мощности (Вт): {optimal_params['power_limit_w']:.3f}")
+        print(f"  Смещение частоты GPU (МГц): {optimal_params['gpu_clock_offset_mhz']:.0f}")
+        print(f"  Смещение частоты памяти (МГц): {optimal_params['memory_clock_offset_mhz']:.0f}")
+        print("")
+        # Установить значение Power Limit GPU в мВт (1 Вт = 1000 мВт)
+        current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp",
+                                                                                 round(optimal_params['power_limit_w'] * 1000))
+        # Вернуть значение смещения частоты GPU по умолчанию
+        current_gpu_clock_offset, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset",
+                                                                                         round(optimal_params['gpu_clock_offset_mhz']))
+        # Вернуть значение смещения частоты памяти по умолчанию
+        current_mem_clock_offset = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset",
+                                                                                      round(optimal_params['memory_clock_offset_mhz']))
+        print("Результат применения параметров GPU:")
+        print(f"  Текущий лимит мощности (Вт): {current_power_limit / 1000}")
+        print(f"  Текущее смещение частоты GPU (МГц): {current_gpu_clock_offset}")
+        print(f"  Текущее смещение частоты памяти (МГц): {current_mem_clock_offset}")
+        print("")
+        self.__found_params_collection_name = self.__found_params_collection_name + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for benchmark_test_type in self.__benchmark_tests:
+            SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
+            # Один запуск теста бенчмарка со сбором данных в БД (ограниченный по времени)
+            res = SocketCalls.call_method_of_benchmark_test_system("run_benchmark",
+                                                                   self.__found_params_collection_name,
+                                                                   self.__time_before_start_test,
+                                                                   self.__time_test_running,
+                                                                   self.__time_after_finish_test,
+                                                                   self.__db_name_for_comparison_tests)
+            if res is False:
+                print("Работа теста бенчмарка типа " + benchmark_test_type
+                      + " была остановлена. Данные параметры работы GPU являются нестабильными")
+        print(f"Данные для тестов бенчмарка с оптимальными параметрами по умолчанию успешно собраны в БД {
+            self.__db_name_for_comparison_tests} в коллекции {
+            self.__found_params_collection_name}")
 
     # Сравнение производительности по умолчанию и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
@@ -398,7 +433,7 @@ class MainAnalyseData:
         # self.__correlation_coefficient(df, 'kendall')
         # self.__correlation_coefficient(df, 'spearman')
         # self.__regression_analysis(df)
-        #
+        # Построить модель и предсказать оптимальные параметры
         model, results, optimal_params = self.__gpu_power_model(df)
         # Флаг, что повторно собирать коллекции с параметрами по умолчанию не нужно
         comparison_collections_already_existed = self.__read_and_verify_collection_names()
@@ -409,6 +444,8 @@ class MainAnalyseData:
             self.__run_test_with_default_params()
             self.__run_test_with_default_params_and_min_power_limit()
             self.__write_collection_names() # Сохранить значения имён коллекций в файл
+        # Собрать данные работы GPU с найденными оптимальными параметрами
+        self.__run_test_with_found_params(optimal_params)
 
 
 main = MainAnalyseData()

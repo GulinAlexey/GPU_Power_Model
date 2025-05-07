@@ -426,53 +426,30 @@ class MainAnalyseData:
 
     # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
-        # DataFrame для данных с параметрами по умолчанию
-        default_params_df = pd.DataFrame(list(self.__client[self.__db_name_for_comparison_tests][self.__default_params_collection_name].find()))
-        print(f"Всего {len(default_params_df)} документов в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию")
-        if len(default_params_df) == 0:
-            print(f"Нет данных в коллекции {self.__default_params_collection_name} для анализа и сравнения")
-            return False
-        # Оставить только те документы, где FPS не пустой (и не None)
-        default_params_df = default_params_df[default_params_df["FPS"].notna()]
-        print(f"Всего {len(default_params_df)} документов с FPS в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию")
-        if len(default_params_df) == 0:
-            print(f"Нет данных в коллекции {self.__default_params_collection_name} для анализа и сравнения")
-            return False
-
-        # DataFrame для данных с параметрами по умолчанию и min Power Limit
-        default_params_and_min_power_limit_df = pd.DataFrame(
-            list(self.__client[self.__db_name_for_comparison_tests][self.__default_params_and_min_power_limit_collection_name].find()))
-        print(f"Всего {len(
-            default_params_and_min_power_limit_df
-            )} документов в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию и минимальным Power Limit")
-        if len(default_params_and_min_power_limit_df) == 0:
-            print(f"Нет данных в коллекции {self.__default_params_and_min_power_limit_collection_name} для анализа и сравнения")
-            return False
-        # Оставить только те документы, где FPS не пустой (и не None)
-        default_params_and_min_power_limit_df = default_params_and_min_power_limit_df[default_params_and_min_power_limit_df["FPS"].notna()]
-        print(f"Всего {len(
-            default_params_and_min_power_limit_df
-            )} документов с FPS в коллекции данных с сенсоров при работе GPU с параметрами по умолчанию и минимальным Power Limit")
-        if len(default_params_and_min_power_limit_df) == 0:
-            print(f"Нет данных в коллекции {self.__default_params_and_min_power_limit_collection_name} для анализа и сравнения")
-            return False
-
-        # DataFrame для данных с найденными оптимальными параметрами
-        found_params_df = pd.DataFrame(
-            list(self.__client[self.__db_name_for_comparison_tests][self.__found_params_collection_name].find()))
-        print(
-            f"Всего {len(found_params_df)} документов в коллекции данных с сенсоров при работе GPU с найденными оптимальными параметрами")
-        if len(found_params_df) == 0:
-            print(f"Нет данных в коллекции {self.__found_params_collection_name} для анализа и сравнения")
-            return False
-        # Оставить только те документы, где FPS не пустой (и не None)
-        found_params_df = found_params_df[found_params_df["FPS"].notna()]
-        print(
-            f"Всего {len(found_params_df)} документов с FPS в коллекции данных с сенсоров при работе GPU с найденными оптимальными параметрами")
-        if len(found_params_df) == 0:
-            print(f"Нет данных в коллекции {self.__found_params_collection_name} для анализа и сравнения")
-            return False
-        # TODO
+        # Список коллекций и их описаний
+        collections = [
+            (self.__default_params_collection_name, "параметрами по умолчанию"),
+            (self.__default_params_and_min_power_limit_collection_name,
+             "параметрами по умолчанию и минимальным Power Limit"),
+            (self.__found_params_collection_name, "найденными оптимальными параметрами")
+        ]
+        # Загрузка и проверка данных
+        dataframes = {}
+        for collection, description in collections:
+            df = pd.DataFrame(list(self.__client[self.__db_name_for_comparison_tests][collection].find()))
+            print(f"Всего {len(df)} документов в коллекции данных с сенсоров при работе GPU с {description}")
+            if len(df) == 0 or (df := df[df["FPS"].notna()]).empty:
+                print(f"Нет данных в коллекции {collection} для анализа и сравнения")
+                return False
+            print(f"Всего {len(df)} документов с FPS в коллекции данных с сенсоров при работе GPU с {description}")
+            dataframes[collection] = df
+        # Распаковка результатов
+        default_params_df = dataframes[self.__default_params_collection_name]
+        default_params_and_min_power_limit_df = dataframes[self.__default_params_and_min_power_limit_collection_name]
+        found_params_df = dataframes[self.__found_params_collection_name]
+        # Анализ и сравнение
+        for default_df in [default_params_df, default_params_and_min_power_limit_df]:
+            pass # TODO
         return True
 
     def main_loop(self):

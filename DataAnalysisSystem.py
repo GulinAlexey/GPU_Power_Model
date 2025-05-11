@@ -74,6 +74,31 @@ class DataAnalysisSystem:
             # 'efficiency_fps_per_watt'
         ]
         self.__current_df = None
+        self.__current_model = None
+        self.__current_optimal_params = None
+        # Имя файла с именами коллекций, чтобы не собирать повторно
+        self.__collection_names_file_path = "comparison_collection_names_for_analysis.txt"
+        # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
+        self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus",
+                                  "glfurrymsi", "glmsi02gpumedium"]
+
+        ### Параметры запуска тестов для сравнения производительности по умолчанию и производительности с оптимальными параметрами ###
+        # Необходимо предварительно установить через передачу значений методам __set_default_time_and_watt_reducing_value_for_tests(),
+        # __set_db_name_for_comparison_tests() и методам запуска тестов
+
+        # Параметры времени теста (в секундах)
+        self.__time_before_start_test = None
+        self.__time_test_running = None
+        self.__time_after_finish_test = None
+        # Параметр уменьшения power limit для достижения минимального значения (для сбора данных и дальнейшего сравнения с оптим.)
+        self.__milliwatt_reducing_value = None  # Величина уменьшения Power Limit за один тест
+        # Название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
+        self.__db_name_for_comparison_tests = None
+        # Имя коллекции БД с оптимальными параметрами
+        self.__found_params_collection_name = None
+        # Имена коллекций БД с параметрами по умолчанию
+        self.__default_params_collection_name = None
+        self.__default_params_and_min_power_limit_collection_name = None
 
     # Получить документы из коллекции в dataframe для обработки (в методах построения модели)
     def __get_documents_from_collection_and_set_current_df(self):
@@ -119,6 +144,7 @@ class DataAnalysisSystem:
             print(f"Тип теста бенчмарка: {benchmark}")
             for param, corr_value in correlation.items():
                 print(f"  {param}: {corr_value:.4f}")
+        # TODO вывод в print() продублировать в return в этом и подобных методах
 
     # Модель линейной регрессии с использованием метода наименьших квадратов (OLS) с целевой переменной - FPS (обособленный метод)
     def __regression_analysis(self, df=None):
@@ -147,6 +173,7 @@ class DataAnalysisSystem:
         for benchmark, summary in results.items():
             print(f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n")
 
+    ######## Методы модели оптимального энергопотребления ########
     # Предобработка данных
     def __preprocess_data(self, data):
         df = data.copy()
@@ -250,7 +277,10 @@ class DataAnalysisSystem:
         # Денормализовать усредненные параметры
         return self.__denormalize_params(avg_params)
 
-    def __gpu_power_model(self, data):
+    def __gpu_power_model(self, data=None):
+        # Работа с текущим dataframe у класса системы анализа, если не передано иное
+        if data is None:
+            data = self.__current_df
         # Предобработка
         df = self.__preprocess_data(data)
         # Обучение модели
@@ -297,8 +327,10 @@ class DataAnalysisSystem:
             print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.3f}")
             print(f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}")
             print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
-        return model, results, avg_original_params
+        self.__current_model = model
+        self.__current_optimal_params = avg_original_params
 
+    ######## Методы сравнения производительности GPU с параметрами по умолчанию и производительности с оптимальными параметрами ########
     # Записать имена коллекций с тестами параметров GPU по умолчанию (чтобы не собирать повторно)
     def __write_collection_names(self):
         # Записать имена коллекций в файл (предварительно очищая его)
@@ -306,6 +338,18 @@ class DataAnalysisSystem:
             file.write(f"{self.__default_params_collection_name}\n")
             file.write(f"{self.__default_params_and_min_power_limit_collection_name}\n")
         print(f"Имена коллекций записаны в {self.__collection_names_file_path}")
+
+    # Задать параметры времени тестов и величины уменьшения Power Limit для сбора данных и анализа (для сравнения default и optimal параметров)
+    def __set_default_time_and_watt_reducing_value_for_tests(self, time_before_start_test, time_test_running,
+                                                            time_after_finish_test, watt_reducing_value):
+        self.__time_before_start_test = time_before_start_test
+        self.__time_test_running = time_test_running
+        self.__time_after_finish_test = time_after_finish_test
+        self.__milliwatt_reducing_value = watt_reducing_value * 1000
+
+    # Задать название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
+    def __set_db_name_for_comparison_tests(self, db_name_for_comparison_tests):
+        self.__db_name_for_comparison_tests = db_name_for_comparison_tests
 
     # Считать имена коллекций с тестами параметров GPU по умолчанию из файла (если он есть)
     def __read_and_verify_collection_names(self):
@@ -322,7 +366,7 @@ class DataAnalysisSystem:
         return True
 
     # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
-    def __run_test_with_default_params(self):
+    def __run_test_with_default_params(self, default_params_collection_name):
         print("Запущен сбор данных для GPU с параметрами работы по умолчанию")
         # Вернуть значение Power Limit GPU по умолчанию
         _ = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
@@ -330,7 +374,7 @@ class DataAnalysisSystem:
         _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
         # Вернуть значение смещения частоты памяти по умолчанию
         _ = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset_to_default")
-        self.__default_params_collection_name = self.__default_params_collection_name + " " + datetime.now().strftime(
+        self.__default_params_collection_name = default_params_collection_name + " " + datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S")
         for benchmark_test_type in self.__benchmark_tests:
             SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
@@ -352,7 +396,7 @@ class DataAnalysisSystem:
               self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
-    def __run_test_with_default_params_and_min_power_limit(self):
+    def __run_test_with_default_params_and_min_power_limit(self, default_params_and_min_power_limit_collection_name):
         print("Запущен сбор данных для GPU с параметрами работы по умолчанию и минимальным Power Limit")
         # Вернуть значение смещения частоты GPU по умолчанию
         _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
@@ -369,7 +413,7 @@ class DataAnalysisSystem:
                     f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто")
                 break
         self.__default_params_and_min_power_limit_collection_name = (
-                    self.__default_params_and_min_power_limit_collection_name
+                    default_params_and_min_power_limit_collection_name
                     + " " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         for benchmark_test_type in self.__benchmark_tests:
             SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
@@ -392,7 +436,10 @@ class DataAnalysisSystem:
         self.__default_params_and_min_power_limit_collection_name}")
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
-    def __run_test_with_found_params(self, optimal_params):
+    def __run_test_with_found_params(self, found_params_collection_name, optimal_params=None):
+        # Работа с текущими оптимальными параметрами у класса системы анализа (из метода __gpu_power_model()), если не передано иное
+        if optimal_params is None:
+            optimal_params = self.__current_optimal_params
         print("Запущен сбор данных для GPU с оптимальными параметрами:")
         print(f"  Лимит мощности (Вт): {optimal_params['power_limit_w']:.3f}")
         print(f"  Смещение частоты GPU (МГц): {optimal_params['gpu_clock_offset_mhz']:.0f}")
@@ -415,7 +462,7 @@ class DataAnalysisSystem:
         print(f"  Текущее смещение частоты GPU (МГц): {current_gpu_clock_offset}")
         print(f"  Текущее смещение частоты памяти (МГц): {current_mem_clock_offset}")
         print("")
-        self.__found_params_collection_name = self.__found_params_collection_name + " " + datetime.now().strftime(
+        self.__found_params_collection_name = found_params_collection_name + " " + datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S")
         for benchmark_test_type in self.__benchmark_tests:
             SocketCalls.call_method_of_benchmark_test_system("change_benchmark_test_type", benchmark_test_type)
@@ -491,6 +538,7 @@ class DataAnalysisSystem:
             print("=" * 50)
         return True
 
+    ######## Методы для взаимодействия через сокеты ########
     # Обработка вызова метода через сокеты
     def __handle_client(self, client_socket):
         try:

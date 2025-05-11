@@ -1,5 +1,5 @@
 from datetime import datetime
-import SocketCalls
+from SocketCalls import SocketCalls
 
 
 class MainTestAndCollectData:

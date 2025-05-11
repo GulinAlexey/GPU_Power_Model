@@ -5,7 +5,7 @@ import pymongo
 from datetime import datetime
 import socket
 import threading
-import SocketCalls
+from SocketCalls import SocketCalls
 
 
 class SensorDataCollectionSystem:

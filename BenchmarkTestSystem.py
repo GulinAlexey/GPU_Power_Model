@@ -7,7 +7,7 @@ import time
 import socket
 import threading
 import psutil
-import SocketCalls
+from SocketCalls import SocketCalls
 
 
 class BenchmarkTestSystem:

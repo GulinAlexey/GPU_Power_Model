@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from datetime import datetime
 import os
 from ParameterOptimizer import ParameterOptimizer
-import SocketCalls
+from SocketCalls import SocketCalls
 optuna.logging.set_verbosity(optuna.logging.WARNING)  # Отключить INFO-сообщения
 
 

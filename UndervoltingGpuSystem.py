@@ -3,7 +3,7 @@ import pynvml
 import os
 import socket
 import threading
-import SocketCalls
+from SocketCalls import SocketCalls
 
 
 class UndervoltingGpuSystem:

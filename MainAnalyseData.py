@@ -23,7 +23,6 @@ class MainAnalyseData:
         print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'pearson'))
         print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'kendall'))
         print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'spearman'))
-        SocketCalls.call_method_of_data_analysis_system("regression_analysis")
         # Построить модель и предсказать оптимальные параметры
         print(SocketCalls.call_method_of_data_analysis_system("gpu_power_model"))
         # Задать параметры времени тестов и величины уменьшения Power Limit для сбора данных и анализа

@@ -159,37 +159,6 @@ class DataAnalysisSystem:
                 print(f"  {param}: {corr_value:.4f}")
         return str_result
 
-    # Модель линейной регрессии с использованием метода наименьших квадратов (OLS) с целевой переменной - FPS (обособленный метод)
-    def __regression_analysis(self, df=None):
-        # Работа с текущим dataframe у класса системы анализа, если не передано иное
-        if df is None:
-            df = self.__current_df
-        columns = ["Benchmark test type", "Power Limit [W]",
-                   "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]", "FPS"]
-        benchmark_types = df["Benchmark test type"].unique()
-        results = {}
-        for benchmark in benchmark_types:
-            # Фильтрация данных по типу теста бенчмарка
-            subset = df[df["Benchmark test type"] == benchmark]
-            # Убрать строки с пропущенными значениями
-            subset = subset.dropna(subset=columns)
-            # Определить зависимую и независимые переменные
-            x = subset[["Power Limit [W]", "GPU Clock Frequency Offset [MHz]", "Memory Clock Offset [MHz]"]]
-            y = subset["FPS"]
-            # Добавить константу для линейной регрессии
-            x = sm.add_constant(x)
-            # Построить модель
-            model = sm.OLS(y, x).fit()  # Модель линейной регрессии с использованием метода наименьших квадратов (OLS)
-            # Сохранить результаты
-            results[benchmark] = model.summary()
-        # Вывести результаты для каждого типа бенчмарка
-        str_result = ""
-        for benchmark, summary in results.items():
-            print_str = f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n"
-            str_result = str_result + "\n" + print_str
-            print(print_str)
-        return str_result
-
     ######## Методы модели оптимального энергопотребления ########
     # Предобработка данных
     def __preprocess_data(self, data):
@@ -653,12 +622,6 @@ class DataAnalysisSystem:
                 else:
                     method = parameters[0]
                     response = self.__correlation_coefficient(method)
-            elif method_name == "regression_analysis":
-                if parameters:
-                    response = f"Для метода {method_name} параметры не требуются"
-                    print(response)
-                else:
-                    response = self.__regression_analysis()
             elif method_name == "gpu_power_model":
                 if parameters:
                     response = f"Для метода {method_name} параметры не требуются"

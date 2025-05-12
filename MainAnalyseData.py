@@ -19,14 +19,13 @@ class MainAnalyseData:
         self.__watt_reducing_value = 5  # Величина уменьшения Power Limit за один тест (в W)
 
     def main_loop(self):
-        SocketCalls.call_method_of_data_analysis_system("get_documents_from_collection_and_set_current_df")
-        # SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'pearson')
-        # SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'kendall')
-        # SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'spearman')
-        # SocketCalls.call_method_of_data_analysis_system("regression_analysis")
+        print(SocketCalls.call_method_of_data_analysis_system("get_documents_from_collection_and_set_current_df"))
+        print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'pearson'))
+        print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'kendall'))
+        print(SocketCalls.call_method_of_data_analysis_system("correlation_coefficient", 'spearman'))
+        SocketCalls.call_method_of_data_analysis_system("regression_analysis")
         # Построить модель и предсказать оптимальные параметры
-        result_str = SocketCalls.call_method_of_data_analysis_system("gpu_power_model")
-        print(result_str)
+        print(SocketCalls.call_method_of_data_analysis_system("gpu_power_model"))
         # Задать параметры времени тестов и величины уменьшения Power Limit для сбора данных и анализа
         SocketCalls.call_method_of_data_analysis_system("set_default_time_and_watt_reducing_value_for_tests", self.__time_before_start_test,
                                                         self.__time_test_running, self.__time_after_finish_test, self.__watt_reducing_value)
@@ -38,14 +37,13 @@ class MainAnalyseData:
             print("Сбор данных о производительности GPU по умолчанию не требуется, коллекции были собраны ранее")
         else:
             print("Начат сбор данных о производительности GPU по умолчанию")
-            SocketCalls.call_method_of_data_analysis_system("run_test_with_default_params")
-            SocketCalls.call_method_of_data_analysis_system("run_test_with_default_params_and_min_power_limit")
-            SocketCalls.call_method_of_data_analysis_system("write_collection_names") # Сохранить значения имён коллекций в файл
+            print(SocketCalls.call_method_of_data_analysis_system("run_test_with_default_params", self.__default_params_collection_name))
+            print(SocketCalls.call_method_of_data_analysis_system("run_test_with_default_params_and_min_power_limit", self.__default_params_and_min_power_limit_collection_name))
+            print(SocketCalls.call_method_of_data_analysis_system("write_collection_names")) # Сохранить значения имён коллекций в файл
         # Собрать данные работы GPU с найденными оптимальными параметрами
-        SocketCalls.call_method_of_data_analysis_system("run_test_with_found_params")
+        print(SocketCalls.call_method_of_data_analysis_system("run_test_with_found_params", self.__found_params_collection_name))
         # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
-        if not SocketCalls.call_method_of_data_analysis_system("calculate_difference_between_original_and_optimal_performance"):
-            print("Отсутствуют данные в коллекциях для анализа и сравнения")
+        print(SocketCalls.call_method_of_data_analysis_system("calculate_difference_between_original_and_optimal_performance"))
 
 
 main = MainAnalyseData()

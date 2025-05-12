@@ -109,14 +109,20 @@ class DataAnalysisSystem:
             all_documents.extend(documents)  # Добавить документы в общий список
         # Преобразовать данные в DataFrame
         df = pd.DataFrame(all_documents)
-        print(f"Всего {len(df)} документов")
+        str_result = ""
+        print_str = f"Всего {len(df)} документов"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         # Оставить только те документы, где FPS не пустой (и не None)
         df = df[df["FPS"].notna()]
-        print(f"Всего {len(df)} документов с FPS")
+        print_str = f"Всего {len(df)} документов с FPS"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         self.__current_df = df
+        return str_result
 
     # Определить коэффициент корреляции между FPS и изменяемыми параметрами работы GPU (обособленный метод)
-    def __correlation_coefficient(self, df=None, method='pearson'):
+    def __correlation_coefficient(self, method='pearson', df=None):
         # Работа с текущим dataframe у класса системы анализа, если не передано иное
         if df is None:
             df = self.__current_df
@@ -138,13 +144,20 @@ class DataAnalysisSystem:
                 fps_correlation = correlation_matrix["FPS"]  # Взять корреляции FPS с остальными параметрами
                 correlations[benchmark] = fps_correlation.drop("FPS").to_dict()
         # Вывести результаты
-        print("=" * 50)
-        print("Коэффициент корреляции " + method)
+        str_result = ""
+        print_str = "\n".join([
+            "=" * 50,
+            "Коэффициент корреляции " + method
+            ])
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         for benchmark, correlation in correlations.items():
-            print(f"Тип теста бенчмарка: {benchmark}")
+            print_str = f"Тип теста бенчмарка: {benchmark}"
+            str_result = str_result + "\n" + print_str
+            print(print_str)
             for param, corr_value in correlation.items():
                 print(f"  {param}: {corr_value:.4f}")
-        # TODO вывод в print() продублировать в return в этом и подобных методах
+        return str_result
 
     # Модель линейной регрессии с использованием метода наименьших квадратов (OLS) с целевой переменной - FPS (обособленный метод)
     def __regression_analysis(self, df=None):
@@ -170,8 +183,12 @@ class DataAnalysisSystem:
             # Сохранить результаты
             results[benchmark] = model.summary()
         # Вывести результаты для каждого типа бенчмарка
+        str_result = ""
         for benchmark, summary in results.items():
-            print(f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n")
+            print_str = f"Результаты для типа теста бенчмарка '{benchmark}':\n{summary}\n"
+            str_result = str_result + "\n" + print_str
+            print(print_str)
+        return str_result
 
     ######## Методы модели оптимального энергопотребления ########
     # Предобработка данных
@@ -285,7 +302,10 @@ class DataAnalysisSystem:
         df = self.__preprocess_data(data)
         # Обучение модели
         model, metrics = self.__train_fps_model(df)
-        print(f"Метрики модели: R2={metrics['r2']:.3f}, MAE={metrics['mae']:.1f}")
+        str_result = ""
+        print_str = f"Метрики модели: R2={metrics['r2']:.3f}, MAE={metrics['mae']:.1f}"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         # Визуализация важности признаков
         self.__plot_feature_importance(model)
         results = {}
@@ -298,7 +318,9 @@ class DataAnalysisSystem:
                 best_params = optimizer.optimize(n_trials=50)
                 results[test_type_str] = best_params
             except Exception as e:
-                print(f"Ошибка для теста {test_type_str}: {str(e)}")
+                print_str = f"Ошибка для теста {test_type_str}: {str(e)}"
+                str_result = str_result + "\n" + print_str
+                print(print_str)
                 continue
         # Получить минимальные и максимальные значения параметров
         param_ranges = {
@@ -306,29 +328,40 @@ class DataAnalysisSystem:
             'gpu_clock_offset_mhz': (self.__scaler.data_min_[1], self.__scaler.data_max_[1]),
             'memory_clock_offset_mhz': (self.__scaler.data_min_[2], self.__scaler.data_max_[2])
         }
-        print("\nДиапазоны параметров:")
-        print(f"  Лимит мощности: {param_ranges['power_limit_w'][0]:.0f}-{param_ranges['power_limit_w'][1]:.0f} Вт")
-        print(
-            f"  Смещение частоты GPU: {param_ranges['gpu_clock_offset_mhz'][0]:.0f}-{param_ranges['gpu_clock_offset_mhz'][1]:.0f} МГц")
-        print(
-            f"  Смещение частоты памяти: {param_ranges['memory_clock_offset_mhz'][0]:.0f}-{param_ranges['memory_clock_offset_mhz'][1]:.0f} МГц")
-        print("\nОптимальные параметры:")
+        print_str = "\n".join([
+            "\nДиапазоны параметров:",
+            f"  Лимит мощности: {param_ranges['power_limit_w'][0]:.0f}-{param_ranges['power_limit_w'][1]:.0f} Вт",
+            f"  Смещение частоты GPU: {param_ranges['gpu_clock_offset_mhz'][0]:.0f}-{param_ranges['gpu_clock_offset_mhz'][1]:.0f} МГц",
+            f"  Смещение частоты памяти: {param_ranges['memory_clock_offset_mhz'][0]:.0f}-{param_ranges['memory_clock_offset_mhz'][1]:.0f} МГц",
+            "\nОптимальные параметры:"
+            ])
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         for test_type, params in results.items():
             # Преобразовать параметры в оригинальный диапазон
             original_params = self.__denormalize_params(params)
-            print(f"\nТест: {test_type}")
-            print(f"  Лимит мощности (Вт): {original_params['power_limit_w']:.3f}")
-            print(f"  Смещение частоты GPU (МГц): {original_params['gpu_clock_offset_mhz']:.0f}")
-            print(f"  Смещение частоты памяти (МГц): {original_params['memory_clock_offset_mhz']:.0f}")
+            print_str = "\n".join([
+                f"\nТест: {test_type}",
+                f"  Лимит мощности (Вт): {original_params['power_limit_w']:.3f}",
+                f"  Смещение частоты GPU (МГц): {original_params['gpu_clock_offset_mhz']:.0f}",
+                f"  Смещение частоты памяти (МГц): {original_params['memory_clock_offset_mhz']:.0f}"
+                ])
+            str_result = str_result + "\n" + print_str
+            print(print_str)
         # Добавлен вывод усредненных параметров для всех тестов
         avg_original_params = self.__find_optimal_for_all_tests(results)
         if avg_original_params:
-            print("\nУсредненные оптимальные параметры для всех тестов:")
-            print(f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.3f}")
-            print(f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}")
-            print(f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}")
+            print_str = "\n".join([
+                "\nУсредненные оптимальные параметры для всех тестов:",
+                f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.3f}",
+                f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}",
+                f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}"
+            ])
+            str_result = str_result + "\n" + print_str
+            print(print_str)
         self.__current_model = model
         self.__current_optimal_params = avg_original_params
+        return str_result
 
     ######## Методы сравнения производительности GPU с параметрами по умолчанию и производительности с оптимальными параметрами ########
     # Записать имена коллекций с тестами параметров GPU по умолчанию (чтобы не собирать повторно)
@@ -337,7 +370,11 @@ class DataAnalysisSystem:
         with open(self.__collection_names_file_path, 'w') as file:
             file.write(f"{self.__default_params_collection_name}\n")
             file.write(f"{self.__default_params_and_min_power_limit_collection_name}\n")
-        print(f"Имена коллекций записаны в {self.__collection_names_file_path}")
+        str_result = ""
+        print_str = f"Имена коллекций записаны в {self.__collection_names_file_path}"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
+        return str_result
 
     # Задать параметры времени тестов и величины уменьшения Power Limit для сбора данных и анализа (для сравнения default и optimal параметров)
     def __set_default_time_and_watt_reducing_value_for_tests(self, time_before_start_test, time_test_running,
@@ -346,10 +383,12 @@ class DataAnalysisSystem:
         self.__time_test_running = time_test_running
         self.__time_after_finish_test = time_after_finish_test
         self.__milliwatt_reducing_value = watt_reducing_value * 1000
+        return True
 
     # Задать название БД с данными для сравнения производительности исходной и с найденными оптимальными параметрами
     def __set_db_name_for_comparison_tests(self, db_name_for_comparison_tests):
         self.__db_name_for_comparison_tests = db_name_for_comparison_tests
+        return True
 
     # Считать имена коллекций с тестами параметров GPU по умолчанию из файла (если он есть)
     def __read_and_verify_collection_names(self):
@@ -367,7 +406,10 @@ class DataAnalysisSystem:
 
     # Запуск тестов бенчмарка с параметрами по умолчанию для дальнейшего сравнения
     def __run_test_with_default_params(self, default_params_collection_name):
-        print("Запущен сбор данных для GPU с параметрами работы по умолчанию")
+        str_result = ""
+        print_str = "Запущен сбор данных для GPU с параметрами работы по умолчанию"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         # Вернуть значение Power Limit GPU по умолчанию
         _ = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp_to_default")
         # Вернуть значение смещения частоты GPU по умолчанию
@@ -386,18 +428,25 @@ class DataAnalysisSystem:
                                                                    self.__time_after_finish_test,
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
-                print(
-                    "Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными")
+                print_str = "Работа теста бенчмарка типа " + benchmark_test_type + " была остановлена. Данные параметры работы GPU являются нестабильными"
+                str_result = str_result + "\n" + print_str
+                print(print_str)
             # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
             SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
                                                              self.__default_params_collection_name,
                                                              self.__db_name_for_comparison_tests)
-        print("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " +
-              self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
+        print_str = ("Данные для тестов бенчмарка с параметрами по умолчанию успешно собраны в БД " +
+                     self.__db_name_for_comparison_tests + " в коллекции " + self.__default_params_collection_name)
+        str_result = str_result + "\n" + print_str
+        print(print_str)
+        return str_result
 
     # Запуск тестов бенчмарка с параметрами по умолчанию (и min power limit) для дальнейшего сравнения
     def __run_test_with_default_params_and_min_power_limit(self, default_params_and_min_power_limit_collection_name):
-        print("Запущен сбор данных для GPU с параметрами работы по умолчанию и минимальным Power Limit")
+        str_result = ""
+        print_str = "Запущен сбор данных для GPU с параметрами работы по умолчанию и минимальным Power Limit"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         # Вернуть значение смещения частоты GPU по умолчанию
         _, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset_to_default")
         # Вернуть значение смещения частоты памяти по умолчанию
@@ -409,8 +458,9 @@ class DataAnalysisSystem:
             current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("reduce_tdp",
                                                                                      self.__milliwatt_reducing_value)
             if current_power_limit == previous_power_limit:
-                print(
-                    f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто")
+                print_str = f"Минимальное значение Power Limit: {current_power_limit / 1000} W достигнуто"
+                str_result = str_result + "\n" + print_str
+                print(print_str)
                 break
         self.__default_params_and_min_power_limit_collection_name = (
                     default_params_and_min_power_limit_collection_name
@@ -425,26 +475,36 @@ class DataAnalysisSystem:
                                                                    self.__time_after_finish_test,
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
-                print("Работа теста бенчмарка типа " + benchmark_test_type
-                      + " была остановлена. Данные параметры работы GPU являются нестабильными")
+                print_str = ("Работа теста бенчмарка типа " + benchmark_test_type +
+                             " была остановлена. Данные параметры работы GPU являются нестабильными")
+                str_result = str_result + "\n" + print_str
+                print(print_str)
             # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
             SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
                                                              self.__default_params_and_min_power_limit_collection_name,
                                                              self.__db_name_for_comparison_tests)
-        print(f"Данные для тестов бенчмарка с параметрами по умолчанию (и минимальным Power Limit: {
-        current_power_limit / 1000} W) успешно собраны в БД {self.__db_name_for_comparison_tests} в коллекции {
-        self.__default_params_and_min_power_limit_collection_name}")
+        print_str = f"Данные для тестов бенчмарка с параметрами по умолчанию (и минимальным Power Limit: {
+            current_power_limit / 1000} W) успешно собраны в БД {self.__db_name_for_comparison_tests} в коллекции {
+            self.__default_params_and_min_power_limit_collection_name}"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
+        return str_result
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
     def __run_test_with_found_params(self, found_params_collection_name, optimal_params=None):
         # Работа с текущими оптимальными параметрами у класса системы анализа (из метода __gpu_power_model()), если не передано иное
         if optimal_params is None:
             optimal_params = self.__current_optimal_params
-        print("Запущен сбор данных для GPU с оптимальными параметрами:")
-        print(f"  Лимит мощности (Вт): {optimal_params['power_limit_w']:.3f}")
-        print(f"  Смещение частоты GPU (МГц): {optimal_params['gpu_clock_offset_mhz']:.0f}")
-        print(f"  Смещение частоты памяти (МГц): {optimal_params['memory_clock_offset_mhz']:.0f}")
-        print("")
+        str_result = ""
+        print_str = "\n".join([
+            "Запущен сбор данных для GPU с оптимальными параметрами:",
+            f"  Лимит мощности (Вт): {optimal_params['power_limit_w']:.3f}",
+            f"  Смещение частоты GPU (МГц): {optimal_params['gpu_clock_offset_mhz']:.0f}",
+            f"  Смещение частоты памяти (МГц): {optimal_params['memory_clock_offset_mhz']:.0f}",
+            ""
+            ])
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         # Установить значение Power Limit GPU в мВт (1 Вт = 1000 мВт)
         current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp",
                                                                                  round(optimal_params[
@@ -457,11 +517,15 @@ class DataAnalysisSystem:
         current_mem_clock_offset = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset",
                                                                                       round(optimal_params[
                                                                                                 'memory_clock_offset_mhz']))
-        print("Результат применения параметров GPU:")
-        print(f"  Текущий лимит мощности (Вт): {current_power_limit / 1000}")
-        print(f"  Текущее смещение частоты GPU (МГц): {current_gpu_clock_offset}")
-        print(f"  Текущее смещение частоты памяти (МГц): {current_mem_clock_offset}")
-        print("")
+        print_str = "\n".join([
+            "Результат применения параметров GPU:",
+            f"  Текущий лимит мощности (Вт): {current_power_limit / 1000}",
+            f"  Текущее смещение частоты GPU (МГц): {current_gpu_clock_offset}",
+            f"  Текущее смещение частоты памяти (МГц): {current_mem_clock_offset}",
+            ""
+            ])
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         self.__found_params_collection_name = found_params_collection_name + " " + datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S")
         for benchmark_test_type in self.__benchmark_tests:
@@ -474,15 +538,20 @@ class DataAnalysisSystem:
                                                                    self.__time_after_finish_test,
                                                                    self.__db_name_for_comparison_tests)
             if res is False:
-                print("Работа теста бенчмарка типа " + benchmark_test_type
-                      + " была остановлена. Данные параметры работы GPU являются нестабильными")
+                print_str = ("Работа теста бенчмарка типа " + benchmark_test_type +
+                             " была остановлена. Данные параметры работы GPU являются нестабильными")
+                str_result = str_result + "\n" + print_str
+                print(print_str)
             # Запись FPS из файла лога MSI Kombustor (и эффективность [FPS/W]) в соответствующие документы коллекции MongoDB
             SocketCalls.call_method_of_benchmark_test_system("update_fps_and_efficiency_in_collection",
                                                              self.__found_params_collection_name,
                                                              self.__db_name_for_comparison_tests)
-        print(f"Данные для тестов бенчмарка с оптимальными параметрами по умолчанию успешно собраны в БД {
-        self.__db_name_for_comparison_tests} в коллекции {
-        self.__found_params_collection_name}")
+        print_str = f"Данные для тестов бенчмарка с оптимальными параметрами по умолчанию успешно собраны в БД {
+            self.__db_name_for_comparison_tests} в коллекции {
+            self.__found_params_collection_name}"
+        str_result = str_result + "\n" + print_str
+        print(print_str)
+        return str_result
 
     # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
@@ -493,15 +562,22 @@ class DataAnalysisSystem:
              "параметрами по умолчанию и минимальным Power Limit"),
             (self.__found_params_collection_name, "найденными оптимальными параметрами")
         ]
+        str_result = ""
         # Загрузка и проверка данных
         dataframes = {}
         for collection, description in collections:
             df = pd.DataFrame(list(self.__client[self.__db_name_for_comparison_tests][collection].find()))
-            print(f"Всего {len(df)} документов в коллекции данных с сенсоров при работе GPU с {description}")
+            print_str = f"Всего {len(df)} документов в коллекции данных с сенсоров при работе GPU с {description}"
+            str_result = str_result + "\n" + print_str
+            print(print_str)
             if len(df) == 0 or (df := df[df["FPS"].notna()]).empty:
-                print(f"Нет данных в коллекции {collection} для анализа и сравнения")
-                return False
-            print(f"Всего {len(df)} документов с FPS в коллекции данных с сенсоров при работе GPU с {description}")
+                print_str = f"Нет данных в коллекции {collection} для анализа и сравнения"
+                str_result = str_result + "\n" + print_str
+                print(print_str)
+                return str_result
+            print_str = f"Всего {len(df)} документов с FPS в коллекции данных с сенсоров при работе GPU с {description}"
+            str_result = str_result + "\n" + print_str
+            print(print_str)
             dataframes[collection] = df
         # Распаковка результатов
         default_params_df = dataframes[self.__default_params_collection_name]
@@ -513,17 +589,25 @@ class DataAnalysisSystem:
                                          "с параметрами по умолчанию"),
                                         (default_params_and_min_power_limit_df,
                                          "с параметрами по умолчанию и минимальным Power Limit")]:
-            print("=" * 50)
-            print(f"Сравнение данных работы GPU с оптимальными параметрами и работы GPU {description}.")
+            print_str = "\n".join([
+                "=" * 50,
+                f"Сравнение данных работы GPU с оптимальными параметрами и работы GPU {description}."
+                ])
+            str_result = str_result + "\n" + print_str
+            print(print_str)
             # Общее сравнение (все типы тестов вместе)
             fps_change = (found_params_df['FPS'].mean() / default_df['FPS'].mean() - 1) * 100
             power_change = (found_params_df['Board Power Draw [W]'].mean() / default_df[
                 'Board Power Draw [W]'].mean() - 1) * 100
-            print(f"Общие результаты (в среднем):")
-            print(f"  Изменение FPS: {fps_change:+.2f}%")
-            print(f"  Изменение энергопотребления: {power_change:+.2f}%")
+            print_str = "\n".join([
+                f"Общие результаты (в среднем):",
+                f"  Изменение FPS: {fps_change:+.2f}%",
+                f"  Изменение энергопотребления: {power_change:+.2f}%",
+                "Результаты по типам тестов (в среднем):"
+            ])
+            str_result = str_result + "\n" + print_str
+            print(print_str)
             # Сравнение по каждому типу теста
-            print("Результаты по типам тестов (в среднем):")
             for benchmark_type in found_params_df['Benchmark test type'].unique():
                 benchmark_found = found_params_df[found_params_df['Benchmark test type'] == benchmark_type]
                 benchmark_default = default_df[default_df['Benchmark test type'] == benchmark_type]
@@ -532,11 +616,17 @@ class DataAnalysisSystem:
                 fps_diff = (benchmark_found['FPS'].mean() / benchmark_default['FPS'].mean() - 1) * 100
                 power_diff = (benchmark_found['Board Power Draw [W]'].mean() / benchmark_default[
                     'Board Power Draw [W]'].mean() - 1) * 100
-                print(f"{benchmark_type}:")
-                print(f"  Изменение FPS: {fps_diff:+.2f}%")
-                print(f"  Изменение энергопотребления: {power_diff:+.2f}%")
-            print("=" * 50)
-        return True
+                print_str = "\n".join([
+                    f"{benchmark_type}:",
+                    f"  Изменение FPS: {fps_diff:+.2f}%",
+                    f"  Изменение энергопотребления: {power_diff:+.2f}%"
+                ])
+                str_result = str_result + "\n" + print_str
+                print(print_str)
+            print_str = "=" * 50
+            str_result = str_result + "\n" + print_str
+            print(print_str)
+        return str_result
 
     ######## Методы для взаимодействия через сокеты ########
     # Обработка вызова метода через сокеты

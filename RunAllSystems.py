@@ -3,6 +3,7 @@ import os
 import sys
 import threading
 from datetime import datetime
+import time
 
 
 class RunAllSystems:
@@ -43,4 +44,5 @@ class RunAllSystems:
             stderr_thread.start()
             print(f"Запущено приложение: {app_name}")
             processes.append(process)
+            time.sleep(1)  # Задержка в 1 секунду, чтобы все систему успели запуститься до начала их взаимодействия
         return processes

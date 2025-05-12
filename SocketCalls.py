@@ -14,7 +14,7 @@ class SocketCalls:
     DATA_ANALYSIS_SYSTEM_ADDRESS = "localhost"
     DATA_ANALYSIS_SYSTEM_PORT = 1237
 
-    TIMEOUT = 120  # Время ожидания ответа на запрос в секундах
+    TIMEOUT = 3600  # Время ожидания ответа на запрос в секундах
 
     # Вызвать метод класса одной из систем через сокеты
     @staticmethod

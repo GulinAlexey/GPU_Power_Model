@@ -155,7 +155,9 @@ class DataAnalysisSystem:
             str_result = str_result + "\n" + print_str
             print(print_str)
             for param, corr_value in correlation.items():
-                print(f"  {param}: {corr_value:.4f}")
+                print_str = f"  {param}: {corr_value:.4f}"
+                str_result = str_result + "\n" + print_str
+                print(print_str)
         return str_result
 
     ######## Методы модели оптимального энергопотребления ########

@@ -2,7 +2,6 @@ import socket
 import threading
 import pymongo
 import pandas as pd
-import statsmodels.api as sm
 import numpy as np
 import lightgbm
 import optuna

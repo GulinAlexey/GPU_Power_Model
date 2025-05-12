@@ -550,19 +550,88 @@ class DataAnalysisSystem:
             method_name = parts[0].strip()
             parameters = [p.strip() for p in parts[1:] if p.strip()]  # Убрать пустые значения и пробелы
             # Вызов соответствующего метода
-            if method_name == "": #TODO
+            if method_name == "get_documents_from_collection_and_set_current_df":
                 if parameters:
                     response = f"Для метода {method_name} параметры не требуются"
                     print(response)
                 else:
-                    response = self.__() #TODO
-            elif method_name == "": #TODO
+                    response = self.__get_documents_from_collection_and_set_current_df()
+            elif method_name == "correlation_coefficient":
                 if len(parameters) != 1:
                     response = f"Метод {method_name} требует 1 параметр"
                     print(response)
                 else:
-                    offset = int(parameters[0])
-                    response = self.__(offset) #TODO
+                    method = parameters[0]
+                    response = self.__correlation_coefficient(method)
+            elif method_name == "regression_analysis":
+                if parameters:
+                    response = f"Для метода {method_name} параметры не требуются"
+                    print(response)
+                else:
+                    response = self.__regression_analysis()
+            elif method_name == "gpu_power_model":
+                if parameters:
+                    response = f"Для метода {method_name} параметры не требуются"
+                    print(response)
+                else:
+                    response = self.__gpu_power_model()
+            elif method_name == "write_collection_names":
+                if parameters:
+                    response = f"Для метода {method_name} параметры не требуются"
+                    print(response)
+                else:
+                    response = self.__write_collection_names()
+            elif method_name == "set_default_time_and_watt_reducing_value_for_tests":
+                if len(parameters) != 4:
+                    response = f"Метод {method_name} требует 4 параметра"
+                    print(response)
+                else:
+                    time_before_start_test = int(parameters[0])
+                    time_test_running = int(parameters[1])
+                    time_after_finish_test = int(parameters[2])
+                    watt_reducing_value = int(parameters[3])
+                    response = self.__set_default_time_and_watt_reducing_value_for_tests(time_before_start_test, time_test_running,
+                                       time_after_finish_test, watt_reducing_value)
+            elif method_name == "set_db_name_for_comparison_tests":
+                if len(parameters) != 1:
+                    response = f"Метод {method_name} требует 1 параметр"
+                    print(response)
+                else:
+                    db_name_for_comparison_tests = parameters[0]
+                    response = self.__set_db_name_for_comparison_tests(db_name_for_comparison_tests)
+            elif method_name == "read_and_verify_collection_names":
+                if parameters:
+                    response = f"Для метода {method_name} параметры не требуются"
+                    print(response)
+                else:
+                    response = self.__read_and_verify_collection_names()
+            elif method_name == "run_test_with_default_params":
+                if len(parameters) != 1:
+                    response = f"Метод {method_name} требует 1 параметр"
+                    print(response)
+                else:
+                    default_params_collection_name = parameters[0]
+                    response = self.__run_test_with_default_params(default_params_collection_name)
+            elif method_name == "run_test_with_default_params_and_min_power_limit":
+                if len(parameters) != 1:
+                    response = f"Метод {method_name} требует 1 параметр"
+                    print(response)
+                else:
+                    default_params_and_min_power_limit_collection_name = parameters[0]
+                    response = self.__run_test_with_default_params_and_min_power_limit(default_params_and_min_power_limit_collection_name)
+            elif method_name == "run_test_with_found_params":
+                if len(parameters) != 1:
+                    response = f"Метод {method_name} требует 1 параметр"
+                    print(response)
+                else:
+                    found_params_collection_name = parameters[0]
+                    response = self.__run_test_with_found_params(found_params_collection_name)
+            elif method_name == "calculate_difference_between_original_and_optimal_performance":
+                if parameters:
+                    response = f"Для метода {method_name} параметры не требуются"
+                    print(response)
+                else:
+                    response = self.__calculate_difference_between_original_and_optimal_performance()
             else:
                 response = f"Неизвестный метод {method_name}"
                 print(response)

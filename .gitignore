@@ -14,3 +14,6 @@ __pycache__/RunAllSystems.cpython-312.pyc
 MainAnalyseData.log
 comparison_collection_names_for_analysis.txt
 DataAnalysisSystem.log
+plot_common_comparison.html
+plot_feature_importance.html
+plot_type_test_comparison.html

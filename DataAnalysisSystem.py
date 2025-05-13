@@ -12,6 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 import plotly.graph_objects as go
 from datetime import datetime
 import os
+import webbrowser
 from ParameterOptimizer import ParameterOptimizer
 from SocketCalls import SocketCalls
 
@@ -80,6 +81,10 @@ class DataAnalysisSystem:
         # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
         self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus",
                                   "glfurrymsi", "glmsi02gpumedium"]
+        # Имена файлов для сохранения plotly-диаграмм
+        self.__plot_feature_importance_html_name = "plot_feature_importance.html"
+        self.__plot_common_comparison_html_name = "plot_common_comparison.html"
+        self.__plot_type_test_comparison_html_name = "plot_type_test_comparison.html"
 
         ### Параметры запуска тестов для сравнения производительности по умолчанию и производительности с оптимальными параметрами ###
         # Необходимо предварительно установить через передачу значений методам __set_default_time_and_watt_reducing_value_for_tests(),
@@ -210,8 +215,7 @@ class DataAnalysisSystem:
         return model, {'r2': r2, 'mae': mae}
 
     # Анализ важности признаков
-    @staticmethod
-    def __plot_feature_importance(model):
+    def __plot_feature_importance(self, model):
         feature_imp = pd.DataFrame({
             'Feature': model.feature_name(),
             'Importance': model.feature_importance()
@@ -226,7 +230,8 @@ class DataAnalysisSystem:
             xaxis_title='Важность',
             yaxis_title='Признак'
         )
-        fig.show()
+        fig.write_html(self.__plot_feature_importance_html_name)
+        webbrowser.open(self.__plot_feature_importance_html_name)
 
     # Преобразовать нормализованные параметры обратно в оригинальный диапазон
     def __denormalize_params(self, params):
@@ -525,8 +530,7 @@ class DataAnalysisSystem:
 
     # Построить две диаграммы для сравнения производительности - общее сравнение FPS и энергопотребления
     # и сравнение по типам тестов
-    @staticmethod
-    def __create_comparison_charts(found_df, default_dfs):
+    def __create_comparison_charts(self, found_df, default_dfs):
         # Данные для диаграмм
         general_data = []
         test_type_data = []
@@ -601,8 +605,10 @@ class DataAnalysisSystem:
             yaxis_title='Изменение, %',
             legend_title="Конфигурация"
         )
-        fig_general.show()
-        fig_tests.show()
+        fig_general.write_html(self.__plot_common_comparison_html_name)
+        webbrowser.open(self.__plot_common_comparison_html_name)
+        fig_tests.write_html(self.__plot_type_test_comparison_html_name)
+        webbrowser.open(self.__plot_type_test_comparison_html_name)
 
     # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):

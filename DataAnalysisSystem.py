@@ -523,6 +523,87 @@ class DataAnalysisSystem:
         print(print_str)
         return str_result
 
+    # Построить две диаграммы для сравнения производительности - общее сравнение FPS и энергопотребления
+    # и сравнение по типам тестов
+    @staticmethod
+    def __create_comparison_charts(found_df, default_dfs):
+        # Данные для диаграмм
+        general_data = []
+        test_type_data = []
+        # Собрать данные для общего сравнения
+        for default_df, desc in default_dfs:
+            # Общие показатели
+            fps_change = (found_df['FPS'].mean() / default_df['FPS'].mean() - 1) * 100
+            power_change = (found_df['Board Power Draw [W]'].mean() /
+                            default_df['Board Power Draw [W]'].mean() - 1) * 100
+            general_data.append({
+                'description': desc,
+                'fps': fps_change,
+                'power': power_change
+            })
+            # Показатели по типам тестов
+            for test_type in found_df['Benchmark test type'].unique():
+                found_benchmark = found_df[found_df['Benchmark test type'] == test_type]
+                default_benchmark = default_df[default_df['Benchmark test type'] == test_type]
+                if not default_benchmark.empty:
+                    fps_diff = (found_benchmark['FPS'].mean() /
+                                default_benchmark['FPS'].mean() - 1) * 100
+                    power_diff = (found_benchmark['Board Power Draw [W]'].mean() /
+                                  default_benchmark['Board Power Draw [W]'].mean() - 1) * 100
+
+                    test_type_data.append({
+                        'test_type': test_type,
+                        'description': desc,
+                        'fps': fps_diff,
+                        'power': power_diff
+                    })
+        # Диаграмма 1 - общее сравнение
+        fig_general = go.Figure()
+        colors = ['#1f77b4', '#ff7f0e']  # Цвета для разных конфигураций
+        for i, (data, color) in enumerate(zip(general_data, colors)):
+            fig_general.add_trace(go.Bar(
+                x=['FPS', 'Энергопотребление'],
+                y=[data['fps'], data['power']],
+                name=data['description'],
+                marker_color=color,
+                text=[f"{data['fps']:+.1f}%", f"{data['power']:+.1f}%"],
+                textposition='auto'
+            ))
+        fig_general.update_layout(
+            title='Общее сравнение производительности',
+            barmode='group',
+            xaxis_title='Параметр',
+            yaxis_title='Изменение, %',
+            legend_title="Конфигурация"
+        )
+        # Диаграмма 2 - сравнение по типам тестов
+        fig_tests = go.Figure()
+        test_types = found_df['Benchmark test type'].unique()
+        for i, test_type in enumerate(test_types):
+            for j, (data, color) in enumerate(zip(general_data, colors)):
+                test_data = [d for d in test_type_data
+                             if d['test_type'] == test_type
+                             and d['description'] == data['description']]
+                if test_data:
+                    fig_tests.add_trace(go.Bar(
+                        x=[f"{test_type}<br>FPS", f"{test_type}<br>Питание"],
+                        y=[test_data[0]['fps'], test_data[0]['power']],
+                        name=f"{data['description']} ({test_type})",
+                        marker_color=color,
+                        text=[f"{test_data[0]['fps']:+.1f}%", f"{test_data[0]['power']:+.1f}%"],
+                        textposition='auto',
+                        showlegend=(i == 0)  # Показывать легенду только для первого теста
+                    ))
+        fig_tests.update_layout(
+            title='Сравнение по типам тестов',
+            barmode='group',
+            xaxis_title='Тип теста и параметр',
+            yaxis_title='Изменение, %',
+            legend_title="Конфигурация"
+        )
+        fig_general.show()
+        fig_tests.show()
+
     # Сравнение производительности по умолчанию (и при min Power Limit) и производительности с найденными оптимальными параметрами
     def __calculate_difference_between_original_and_optimal_performance(self):
         # Список коллекций и их описаний
@@ -555,10 +636,10 @@ class DataAnalysisSystem:
             self.__default_params_and_min_power_limit_collection_name]
         found_params_df = dataframes[self.__found_params_collection_name]
         # Анализ и сравнение
-        for default_df, description in [(default_params_df,
-                                         "с параметрами по умолчанию"),
-                                        (default_params_and_min_power_limit_df,
-                                         "с параметрами по умолчанию и минимальным Power Limit")]:
+        default_configs = [(default_params_df, "с параметрами по умолчанию"),
+                           (default_params_and_min_power_limit_df, "с параметрами по умолчанию и минимальным Power Limit")
+        ]
+        for default_df, description in default_configs:
             print_str = "\n".join([
                 "=" * 50,
                 f"Сравнение данных работы GPU с оптимальными параметрами и работы GPU {description}."
@@ -596,6 +677,8 @@ class DataAnalysisSystem:
             print_str = "=" * 50
             str_result = str_result + "\n" + print_str
             print(print_str)
+        # Вызов функции построения диаграмм
+        self.__create_comparison_charts(found_params_df, default_configs)
         return str_result
 
     ######## Методы для взаимодействия через сокеты ########

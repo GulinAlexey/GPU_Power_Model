@@ -8,3 +8,6 @@ procs = RunAllSystems.run_all_systems(RunAllSystems.PYTHON_PATH,
                                           'BenchmarkTestSystem.py',
                                           'MainAnalyseData.py'
                                       ])
+
+# Ждать завершения главного процесса и остановить остальные процессы
+RunAllSystems.wait_and_terminate(procs, 'MainAnalyseData.py')

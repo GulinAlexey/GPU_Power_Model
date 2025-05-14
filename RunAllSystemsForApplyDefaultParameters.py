@@ -10,5 +10,5 @@ procs = RunAllSystems.run_all_systems(RunAllSystems.PYTHON_PATH,
                                           'MainApplyDefaultParameters.py'
                                       ])
 
-# Ждать завершения MainApplyOptimalParameters.py и остановить остальные процессы
+# Ждать завершения главного процесса и остановить остальные процессы
 RunAllSystems.wait_and_terminate(procs, 'MainApplyDefaultParameters.py')

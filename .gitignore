@@ -18,3 +18,5 @@ plot_common_comparison.html
 plot_feature_importance.html
 plot_type_test_comparison.html
 optimal_params.txt
+MainApplyOptimalParameters.log
+MainApplyDefaultParameters.log

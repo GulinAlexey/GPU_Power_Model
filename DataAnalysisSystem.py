@@ -341,7 +341,6 @@ class DataAnalysisSystem:
         self.__current_optimal_params = avg_original_params
         print_str = self.__save_optimal_params_to_file() # Сохранить оптимальные значения в файл
         str_result = str_result + "\n" + print_str
-        print(print_str)
         return str_result
 
     ######## Методы сравнения производительности GPU с параметрами по умолчанию и производительности с оптимальными параметрами ########
@@ -504,11 +503,11 @@ class DataAnalysisSystem:
         current_power_limit = SocketCalls.call_method_of_undervolting_gpu_system("set_tdp",
                                                                                  round(optimal_params[
                                                                                            'power_limit_w'] * 1000))
-        # Вернуть значение смещения частоты GPU по умолчанию
+        # Установить значение смещения частоты GPU
         current_gpu_clock_offset, _ = SocketCalls.call_method_of_undervolting_gpu_system("set_gpu_clock_offset",
                                                                                          round(optimal_params[
                                                                                                    'gpu_clock_offset_mhz']))
-        # Вернуть значение смещения частоты памяти по умолчанию
+        # Установить значение смещения частоты памяти
         current_mem_clock_offset = SocketCalls.call_method_of_undervolting_gpu_system("set_mem_clock_offset",
                                                                                       round(optimal_params[
                                                                                                 'memory_clock_offset_mhz']))

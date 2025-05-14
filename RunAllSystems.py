@@ -10,6 +10,7 @@ import psutil
 class RunAllSystems:
     # !!! Замените на ваш путь до python, если нужно
     PYTHON_PATH = os.path.dirname(sys.executable) + r'\python.exe'
+    sw_minimize = 6  # Значение константы SW_MINIMIZE (в Windows)
 
     # Запись потока вывода в файл
     @staticmethod
@@ -39,12 +40,17 @@ class RunAllSystems:
             with open(log_file, 'a', encoding='utf-8') as log:
                 start_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 log.write(f"[Начало логирования: {start_time}]\n")
-            # Запустить приложение, перенаправляя stdout и stderr
+            # Параметры для свёрнутого окна
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags = subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = RunAllSystems.sw_minimize  # Окно запускается свёрнутым
+            # Запустить приложение со свёрнутым окном, перенаправляя stdout и stderr
             process = subprocess.Popen(
-                [python_path, app_name],
+                ['cmd', '/c', f'title {app_name} && {python_path} {app_name}'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NEW_CONSOLE  # Открыть новое окно консоли
+                creationflags=subprocess.CREATE_NEW_CONSOLE,  # Открыть новое окно консоли
+                startupinfo=startupinfo
             )
             # Создать отдельные потоки для логирования stdout и stderr
             stdout_thread = threading.Thread(target=RunAllSystems.log_stream, args=(process.stdout, log_file))

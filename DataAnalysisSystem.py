@@ -86,6 +86,9 @@ class DataAnalysisSystem:
         self.__plot_common_comparison_html_name = "plot_common_comparison.html"
         self.__plot_type_test_comparison_html_name = "plot_type_test_comparison.html"
 
+        # Путь для сохранения найденных оптимальных значений параметров работы GPU для дальнейшего использования в MainApplyOptimalParameters
+        self.__optimal_params_file_path = "optimal_params.txt"
+
         ### Параметры запуска тестов для сравнения производительности по умолчанию и производительности с оптимальными параметрами ###
         # Необходимо предварительно установить через передачу значений методам __set_default_time_and_watt_reducing_value_for_tests(),
         # __set_db_name_for_comparison_tests() и методам запуска тестов
@@ -336,6 +339,9 @@ class DataAnalysisSystem:
             print(print_str)
         self.__current_model = model
         self.__current_optimal_params = avg_original_params
+        print_str = self.__save_optimal_params_to_file() # Сохранить оптимальные значения в файл
+        str_result = str_result + "\n" + print_str
+        print(print_str)
         return str_result
 
     ######## Методы сравнения производительности GPU с параметрами по умолчанию и производительности с оптимальными параметрами ########
@@ -464,6 +470,20 @@ class DataAnalysisSystem:
         str_result = str_result + "\n" + print_str
         print(print_str)
         return str_result
+
+    # Сохранить значения оптимальных параметров работы GPU в файл для дальнейшего использования в MainApplyOptimalParameters
+    def __save_optimal_params_to_file(self, optimal_params=None):
+        # Работа с текущими оптимальными параметрами у класса системы анализа (из метода __gpu_power_model()), если не передано иное
+        if optimal_params is None:
+            optimal_params = self.__current_optimal_params
+        # Записать имена коллекций в файл (предварительно очищая его)
+        with open(self.__optimal_params_file_path, 'w') as file:
+            file.write(f"Power Limit [W]: {optimal_params['power_limit_w']:.3f}\n")
+            file.write(f"GPU Clock Offset [MHz]: {optimal_params['gpu_clock_offset_mhz']:.0f}\n")
+            file.write(f"Memory Clock Offset [MHz]: {optimal_params['memory_clock_offset_mhz']:.0f}\n")
+        print_str = f"Значения оптимальных параметров записаны в {self.__optimal_params_file_path}"
+        print(print_str)
+        return print_str
 
     # Запуск тестов бенчмарка с найденными оптимальными параметрами для дальнейшего сравнения
     def __run_test_with_found_params(self, found_params_collection_name, optimal_params=None):

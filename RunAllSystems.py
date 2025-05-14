@@ -14,9 +14,18 @@ class RunAllSystems:
     # Запись потока вывода в файл
     @staticmethod
     def log_stream(stream, log_file):
-        with open(log_file, 'a', encoding='utf-8') as log:
+        with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
             for line in iter(stream.readline, b''):
-                log_str = line.decode('utf-8').rstrip('\n') # Убрать лишний перевод строки
+                try:
+                    # Попытка декодировать как UTF-8
+                    log_str = line.decode('utf-8').rstrip('\n') # Убрать лишний перевод строки, UTF-8
+                except UnicodeDecodeError:
+                    try:
+                        # Если UTF-8 не сработал, использовать другую кодировку
+                        log_str = line.decode('cp1251').rstrip('\n')  # Убрать лишний перевод строки, Windows-1251
+                    except UnicodeDecodeError:
+                        # Если ничего не помогло, сохранить как есть с заменой нечитаемых символов
+                        log_str = line.decode('utf-8', errors='replace').rstrip('\n')
                 log.write(log_str)
                 print(log_str)
         stream.close()

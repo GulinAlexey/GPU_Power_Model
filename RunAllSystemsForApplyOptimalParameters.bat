@@ -1,0 +1,2 @@
+py .\RunAllSystemsForApplyOptimalParameters.py
+pause

@@ -1,0 +1,2 @@
+py .\RunAllSystemsForAnalyseData.py
+pause

@@ -1,0 +1,2 @@
+py .\RunAllSystemsForApplyDefaultParameters.py
+pause

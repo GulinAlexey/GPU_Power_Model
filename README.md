@@ -8,6 +8,8 @@
 - NVIDIA Inspector
 - Metabase (опционально)
 
+Необходимые библиотеки Python можно установить при помощи команды `py -m pip install -r requirements.txt` в директории данного проекта.
+
 ### Оборудование
 - Протестировано на NVIDIA GTX 1650
 

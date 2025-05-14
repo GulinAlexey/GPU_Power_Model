@@ -4,6 +4,7 @@ import sys
 import threading
 from datetime import datetime
 import time
+import psutil
 
 
 class RunAllSystems:
@@ -46,3 +47,31 @@ class RunAllSystems:
             processes.append(process)
             time.sleep(1)  # Задержка в 1 секунду, чтобы все систему успели запуститься до начала их взаимодействия
         return processes
+
+    # Ждать завершения главного процесса и остановить все остальные процессы
+    @staticmethod
+    def wait_and_terminate(processes, main_process_name):
+        main_proc = None
+        # Найти главный процесс
+        for proc in processes:
+            cmdline = ' '.join(proc.args)  # Получить командную строку процесса
+            if main_process_name in cmdline:
+                main_proc = proc
+                break
+        if not main_proc:
+            print(f"Главный процесс {main_process_name} не найден!")
+            return False
+        print(f"Ожидание завершения {main_process_name}...")
+        main_proc.wait()  # Ждать завершения главного процесса
+        print(f"Главный процесс завершён. Остановка остальных процессов...")
+        for proc in processes:
+            if proc != main_proc and proc.poll() is None:  # Если процесс еще работает
+                print(f"Завершение процесса: {' '.join(proc.args)}")
+                # Завершить процесс и все его дочерние процессы
+                parent = psutil.Process(proc.pid)
+                for child in parent.children(recursive=True):
+                    child.terminate()
+                proc.terminate()
+                proc.wait()
+        print("Все процессы завершены.")
+        return True

@@ -9,3 +9,6 @@ procs = RunAllSystems.run_all_systems(RunAllSystems.PYTHON_PATH,
                                           'UndervoltingGpuSystem.py',
                                           'MainApplyDefaultParameters.py'
                                       ])
+
+# Ждать завершения MainApplyOptimalParameters.py и остановить остальные процессы
+RunAllSystems.wait_and_terminate(procs, 'MainApplyDefaultParameters.py')

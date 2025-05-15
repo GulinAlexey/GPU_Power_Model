@@ -234,7 +234,6 @@ class DataAnalysisSystem:
             yaxis_title='Признак'
         )
         fig.write_html(self.__plot_feature_importance_html_name)
-        webbrowser.open(self.__plot_feature_importance_html_name)
 
     # Преобразовать нормализованные параметры обратно в оригинальный диапазон
     def __denormalize_params(self, params):
@@ -624,6 +623,10 @@ class DataAnalysisSystem:
             yaxis_title='Изменение, %',
             legend_title="Конфигурация"
         )
+
+        # Открыть диаграмму важности признаков только сейчас, поскольку открытый браузер будет влиять на измерения при тесте бенчмарка
+        webbrowser.open(self.__plot_feature_importance_html_name)
+
         fig_general.write_html(self.__plot_common_comparison_html_name)
         webbrowser.open(self.__plot_common_comparison_html_name)
         fig_tests.write_html(self.__plot_type_test_comparison_html_name)

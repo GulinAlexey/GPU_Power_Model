@@ -254,23 +254,6 @@ class DataAnalysisSystem:
             'memory_clock_offset_mhz': original_params[mem_idx]
         }
 
-    # Найти усредненные оптимальные параметры для всех типов тестов
-    def __find_optimal_for_all_tests(self, results):
-        if not results:
-            return None
-        # Собрать все параметры для денормализации
-        all_params = []
-        for test_type, params in results.items():
-            all_params.append(params)
-        # Вычислить средние значения нормализованных параметров
-        avg_params = {
-            'power_limit_w': np.mean([p['power_limit_w'] for p in all_params]),
-            'gpu_clock_offset_mhz': np.mean([p['gpu_clock_offset_mhz'] for p in all_params]),
-            'memory_clock_offset_mhz': np.mean([p['memory_clock_offset_mhz'] for p in all_params])
-        }
-        # Денормализовать усредненные параметры
-        return self.__denormalize_params(avg_params)
-
     def __gpu_power_model(self, data=None):
         # Работа с текущим dataframe у класса системы анализа, если не передано иное
         if data is None:
@@ -285,20 +268,18 @@ class DataAnalysisSystem:
         print(print_str)
         # Визуализация важности признаков
         self.__plot_feature_importance(model)
-        results = {}
-        for test_type_num in df['benchmark_type'].unique():
-            # Преобразовать в строку и декодировать
-            test_type_str = self.__label_encoder.inverse_transform([test_type_num])[0]
-            optimizer = ParameterOptimizer(model, test_type_str, alpha=0.3)
-            optimizer.le = self.__label_encoder  # Передать encoder
-            try:
-                best_params = optimizer.optimize(n_trials=50)
-                results[test_type_str] = best_params
-            except Exception as e:
-                print_str = f"Ошибка для теста {test_type_str}: {str(e)}"
-                str_result = str_result + "\n" + print_str
-                print(print_str)
-                continue
+        best_params = None
+        try:
+            optimizer = ParameterOptimizer(model)
+            optimizer.le = self.__label_encoder
+            best_params = optimizer.optimize() # Единственный результат для всех тестов
+        except Exception as e:
+            print_str = f"Ошибка оптимизации: {str(e)}"
+            str_result = str_result + "\n" + print_str
+            print(print_str)
+        # Преобразовать параметры в оригинальный диапазон
+        best_params = self.__denormalize_params(best_params)
+
         # Получить минимальные и максимальные значения параметров
         param_ranges = {
             'power_limit_w': (self.__scaler.data_min_[0], self.__scaler.data_max_[0]),
@@ -314,30 +295,18 @@ class DataAnalysisSystem:
             ])
         str_result = str_result + "\n" + print_str
         print(print_str)
-        for test_type, params in results.items():
-            # Преобразовать параметры в оригинальный диапазон
-            original_params = self.__denormalize_params(params)
-            print_str = "\n".join([
-                f"\nТест: {test_type}",
-                f"  Лимит мощности (Вт): {original_params['power_limit_w']:.3f}",
-                f"  Смещение частоты GPU (МГц): {original_params['gpu_clock_offset_mhz']:.0f}",
-                f"  Смещение частоты памяти (МГц): {original_params['memory_clock_offset_mhz']:.0f}"
-                ])
-            str_result = str_result + "\n" + print_str
-            print(print_str)
-        # Добавлен вывод усредненных параметров для всех тестов
-        avg_original_params = self.__find_optimal_for_all_tests(results)
-        if avg_original_params:
-            print_str = "\n".join([
-                "\nУсредненные оптимальные параметры для всех тестов:",
-                f"  Лимит мощности (Вт): {avg_original_params['power_limit_w']:.3f}",
-                f"  Смещение частоты GPU (МГц): {avg_original_params['gpu_clock_offset_mhz']:.0f}",
-                f"  Смещение частоты памяти (МГц): {avg_original_params['memory_clock_offset_mhz']:.0f}"
-            ])
-            str_result = str_result + "\n" + print_str
-            print(print_str)
+        # Вывод общих параметров для всех тестов
+        print_str = "\n".join([
+            "\nОбщие оптимальные параметры для всех тестов:",
+            f"  Лимит мощности (Вт): {best_params['power_limit_w']:.3f}",
+            f"  Смещение частоты GPU (МГц): {best_params['gpu_clock_offset_mhz']:.0f}",
+            f"  Смещение частоты памяти (МГц): {best_params['memory_clock_offset_mhz']:.0f}"
+        ])
+        str_result = str_result + "\n" + print_str
+        print(print_str)
+
         self.__current_model = model
-        self.__current_optimal_params = avg_original_params
+        self.__current_optimal_params = best_params
         print_str = self.__save_optimal_params_to_file() # Сохранить оптимальные значения в файл
         str_result = str_result + "\n" + print_str
         return str_result

@@ -60,7 +60,6 @@ class RunAllSystems:
             stderr_thread.start()
             print(f"Запущено приложение: {app_name}")
             processes.append(process)
-            time.sleep(1)  # Задержка в 1 секунду, чтобы все систему успели запуститься до начала их взаимодействия
         return processes
 
     # Ждать завершения главного процесса и остановить все остальные процессы

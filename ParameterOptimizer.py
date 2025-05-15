@@ -39,7 +39,7 @@ class ParameterOptimizer:
         power = params.get('power_limit_w', 0.5)
         return (avg_fps * (1 - self.alpha)) / (power * self.alpha + 1e-9)
 
-    def optimize(self, n_trials=1000):
+    def optimize(self, n_trials=100):
         study = optuna.create_study(direction='maximize')
         study.optimize(self.__objective, n_trials=n_trials)
         return study.best_params

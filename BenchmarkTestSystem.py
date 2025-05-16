@@ -186,7 +186,7 @@ class BenchmarkTestSystem:
                     time_after_finish_test = int(parameters[3])
                     if len(parameters) == 4:
                         response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,
-                                                    time_after_finish_test)
+                                                        time_after_finish_test)
                     else:
                         db_name = parameters[4]
                         response = self.__run_benchmark(collection_name, time_before_start_test, time_test_running,

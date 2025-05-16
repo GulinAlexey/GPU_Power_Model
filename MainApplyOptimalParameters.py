@@ -7,7 +7,6 @@ class MainApplyOptimalParameters:
         # Путь сохранённых оптимальных значений параметров работы GPU из DataAnalysisSystem
         self.__optimal_params_file_path = "optimal_params.txt"
         self.__optimal_params = {}
-        # TODO
 
     def __read_params_from_file(self):
         if not os.path.exists(self.__optimal_params_file_path):

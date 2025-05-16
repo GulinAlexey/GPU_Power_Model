@@ -326,7 +326,7 @@ class DataAnalysisSystem:
 
     # Задать параметры времени тестов и величины уменьшения Power Limit для сбора данных и анализа (для сравнения default и optimal параметров)
     def __set_default_time_and_watt_reducing_value_for_tests(self, time_before_start_test, time_test_running,
-                                                            time_after_finish_test, watt_reducing_value):
+                                                             time_after_finish_test, watt_reducing_value):
         self.__time_before_start_test = time_before_start_test
         self.__time_test_running = time_test_running
         self.__time_after_finish_test = time_after_finish_test
@@ -634,8 +634,7 @@ class DataAnalysisSystem:
         found_params_df = dataframes[self.__found_params_collection_name]
         # Анализ и сравнение
         default_configs = [(default_params_df, "с параметрами по умолчанию"),
-                           (default_params_and_min_power_limit_df, "с параметрами по умолчанию и минимальным Power Limit")
-        ]
+                           (default_params_and_min_power_limit_df, "с параметрами по умолчанию и минимальным Power Limit")]
         for default_df, description in default_configs:
             print_str = "\n".join([
                 "=" * 50,
@@ -725,7 +724,7 @@ class DataAnalysisSystem:
                     time_after_finish_test = int(parameters[2])
                     watt_reducing_value = int(parameters[3])
                     response = self.__set_default_time_and_watt_reducing_value_for_tests(time_before_start_test, time_test_running,
-                                       time_after_finish_test, watt_reducing_value)
+                                                                                         time_after_finish_test, watt_reducing_value)
             elif method_name == "set_db_name_for_comparison_tests":
                 if len(parameters) != 1:
                     response = f"Метод {method_name} требует 1 параметр"

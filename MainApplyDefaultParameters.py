@@ -17,7 +17,6 @@ class MainApplyDefaultParameters:
             ""
         ]))
 
-
     def main_loop(self):
         print("Применение параметров работы GPU по умолчанию")
         self.__apply_default_params()

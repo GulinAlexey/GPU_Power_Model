@@ -31,7 +31,7 @@ class MainTestAndCollectData:
 
         # Список типов тестов бенчмарка для запуска и сбора данных (выполняются по очереди)
         self.__benchmark_tests = ["gltessyspherex32", "glpbrdonut", "glphongdonut", "glmsi01", "glfurrytorus", "glfurrymsi",
-                                   "glmsi02gpumedium"]
+                                  "glmsi02gpumedium"]
 
     def main_loop(self):
         # Сбор данных для нескольких разных типов тестов бенчмарка
